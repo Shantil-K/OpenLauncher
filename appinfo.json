@@ -1,0 +1,12 @@
+{
+  "id": "moe.exkc.hoooooooooom",
+  "version": "1.5.0",
+  "vendor": "exkc",
+  "type": "web",
+  "main": "index.html",
+  "title": "QwQHome",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "noSplashOnLaunch": true,
+  "supportGIP": true
+}

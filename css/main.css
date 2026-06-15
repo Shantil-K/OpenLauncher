@@ -1,0 +1,48 @@
+/*SPDX-License-Identifier: WTFNMFPL*/
+
+#appluncher {
+    height: calc(100vh - 7em);
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+    background: white;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 5vw);
+    margin-left: 20vw;
+    margin-right: 20vw;
+    grid-template-rows: repeat(auto-fill, 10vw);
+        background-color: rgba(255, 255, 255, 0.5);
+	    justify-content: center;
+    align-items: center;
+        margin-top: 2em;
+}
+
+img.appicon {
+    width: 100%;
+}
+
+.appitem {
+    padding: 10px;
+    height: min-content;
+}
+
+body {
+	background: no-repeat center / 100% url(../access/IMG_5901.JPG);
+}
+
+.appname {
+    line-break: anywhere;
+    height: 1em;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#clock {
+    width: 100%;
+    text-align: center;
+    font-size: 5em;
+    margin: 0px;
+    color: white;
+    text-decoration: underline;
+}
