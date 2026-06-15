@@ -11,7 +11,7 @@ function initapplun(){
         permtest.onservicecallback = function(e) {
 	                noperm=(!(JSON.parse(e).errorText === undefined));
 console.log("perm:"+noperm);
-		if (inited) {
+		if (!inited) {
 		 setInterval(() => {
 
           var brclock = new window.PalmServiceBridge();
