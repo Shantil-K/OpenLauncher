@@ -4,6 +4,15 @@
   "vendor": "exkc",
   "type": "web",
   "main": "index.html",
+"resolutionIndependent": true,
+"resolution": [
+                "3840x2160",
+                "1920x1080",
+                "1280x720"
+        ],
+
+        "supportTouchMode": "full",
+        "supportPortraitMode": true,
   "title": "QwQHome",
   "icon": "icon.png",
   "largeIcon": "largeIcon.png",
