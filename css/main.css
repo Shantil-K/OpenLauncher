@@ -1,7 +1,7 @@
 /*SPDX-License-Identifier: WTFNMFPL*/
 
 #appluncher {
-    height: calc(100vh - 6vh - 2em);
+    height: calc(100vh - 6vh - 1vh);
     overflow-y: scroll;
     scrollbar-gutter: stable;
     display: grid;
@@ -30,7 +30,7 @@ body {
 
 .appname {
     line-break: anywhere;
-    height: 2em;
+    height: 1vh;
     font-size: 1.5vh;
     overflow: hidden;
     text-align: center;
