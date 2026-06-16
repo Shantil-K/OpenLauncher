@@ -4,7 +4,6 @@
   "vendor": "exkc",
   "type": "web",
   "main": "index.html",
-"resolutionIndependent": true,
 "resolution": [
                 "3840x2160",
                 "1920x1080",
