@@ -20,7 +20,7 @@ Run the fellow command on the TV to replace your home screen
 
 
 ```
-#  luna-send-pub -n 1 'luna://com.webos.service.eim/addDevice' '{"appId":"moe.exkc.hoooooooooom","pigImage":"","mvpdIcon":""}'
+# luna-send-pub -n 1 'luna://com.webos.service.eim/addDevice' '{"appId":"moe.exkc.hoooooooooom","pigImage":"access/IMG_5901.JPG","mvpdIcon":"access/IMG_5901.JPG","description": "QwQHome :3",}'
  
 # cp /media/developer/apps/usr/palm/applications/moe.exkc.hoooooooooom/access/replace.sh /var/lib/webosbrew/init.d/
 
