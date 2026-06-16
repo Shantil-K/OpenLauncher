@@ -30,7 +30,7 @@ body {
 
 .appname {
     line-break: anywhere;
-    height: 1vh;
+    height: 1.5vh;
     font-size: 1.5vh;
     overflow: hidden;
     text-align: center;
