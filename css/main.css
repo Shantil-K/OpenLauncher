@@ -30,18 +30,18 @@ body {
 
 .appname {
     line-break: anywhere;
-    height: 1em;
+    height: 2em;
+    font-size: 1.5vh;
     overflow: hidden;
     text-align: center;
     text-overflow: ellipsis;
     white-space: nowrap;
-        font-size: 1vh;
 }
 
 #clock {
     width: 100%;
     text-align: center;
-    font-size: 4.5vh;
+font-size: 6vh;
     margin: 0px;
     color: white;
     text-decoration: underline;
