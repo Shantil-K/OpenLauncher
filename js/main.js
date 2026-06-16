@@ -1,6 +1,7 @@
 //SPDX-License-Identifier: WTFNMFPL
 
 let inited=false;
+let applist;
 	  let noperm=true;
 let appdir='/media/developer/apps/usr/palm/applications/moe.exkc.hoooooooooom';
 function initapplun(){
@@ -67,7 +68,6 @@ if (l <= 9){
 }
 
 let appluncherinit= function (payload) {
-let applist;
 console.log("perm:"+noperm);
 
 if (noperm){
@@ -124,6 +124,31 @@ initapplun();
 });
 
 document.addEventListener("webOSRelaunch", (event) => {
+
+		  var doireload = new window.PalmServiceBridge();
+doireload.onservicecallback=function (payload) {
+
+	let newapplist;
+if (noperm){
+	newapplist=JSON.parse(JSON.parse(payload).stdoutString).apps;
+}else{
+	newapplist=JSON.parse(payload).apps;
+}
+
+
+if (!( JSON.stringify(applist) === JSON.stringify(newapplist) ) ) {
 initapplun();
+	console.log("reinit");
+}
+
+};
+	if (noperm){
+	   doireload.call('luna://org.webosbrew.hbchannel.service/exec','{"command":"luna-send -n 1 -f luna://com.webos.applicationManager/listApps \'{}\'"}');
+
+}else {
+	doireload.call('luna://com.webos.applicationManager/listApps',"{}");
+
+}
+
 });
 
