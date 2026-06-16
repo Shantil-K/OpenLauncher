@@ -1,7 +1,7 @@
 /*SPDX-License-Identifier: WTFNMFPL*/
 
 #appluncher {
-    height: calc(100vh - 7em);
+    height: calc(100vh - 6vh - 2em);
     overflow-y: scroll;
     scrollbar-gutter: stable;
     display: grid;
