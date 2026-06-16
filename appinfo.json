@@ -2,6 +2,7 @@
   "id": "moe.exkc.hoooooooooom",
   "version": "1.5.0",
   "vendor": "exkc",
+  "spinnerOnLaunch":false,
   "type": "web",
   "main": "index.html",
 "resolution": [
