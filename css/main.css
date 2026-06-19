@@ -61,13 +61,16 @@
     height: min-content;
 }
 
-body {
-	background: no-repeat center / 100% url(../access/IMG_5901.JPG);
+body,#maindiv {
 	    width: 100vw;
 	    font-family: PlusJakartaSans-Light;
     height: 100vh;
 }
+#maindiv{
+	
+	background: no-repeat center / 100% url(../access/IMG_5901.JPG);
 
+}
 .appname {
     line-break: anywhere;
         height: 2vh;
@@ -94,9 +97,14 @@ body {
 .appitem:hover { background-color: rgba(255, 150, 255, 0.5); }
 
 #realappbarbtu:not(:checked) ~ #appluncher {
-/* display none is slow 
- * ig it is because switching to display grid 
- * reqited rearrange appitem */
-	visibility: hidden;
+/* Hack : make appluncher always loaded so it can be faster when i open/close it */
+z-index:-9999;
 }
+
+#realappbarbtu:checked ~ #appluncher {
+z-index:9999;
+
+
+}
+
 
