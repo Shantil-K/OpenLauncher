@@ -102,7 +102,7 @@ console.log("perm:"+noperm);
 console.log(payload);
 console.log(applist);
 //barlist=["com.webos.app.camera","com.palm.app.settings"];
-barlist=["com.webos.app.mediadiscovery","com.webos.app.hdmi1","com.webos.app.hdmi2","com.webos.app.hdmi3","com.webos.app.hdmi4","com.webos.app.livetv"];
+barlist=["com.webos.app.livetv","com.webos.app.hdmi1","com.webos.app.hdmi2","com.webos.app.hdmi3","com.webos.app.hdmi4","com.webos.app.mediadiscovery","com.github.k4zmu2a.space-cadet-pinball","com.famobi.ctr"];
 if (inited){
 
 	appluncher.innerHTML="";
