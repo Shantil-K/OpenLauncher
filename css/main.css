@@ -94,6 +94,9 @@ body {
 .appitem:hover { background-color: rgba(255, 150, 255, 0.5); }
 
 #realappbarbtu:not(:checked) ~ #appluncher {
-    display: none !important;
+/* display none is slow 
+ * ig it is because switching to display grid 
+ * reqited rearrange appitem */
+	visibility: hidden;
 }
 
