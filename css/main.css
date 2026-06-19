@@ -1,22 +1,59 @@
 /*SPDX-License-Identifier: WTFNMFPL*/
 
-#appluncher {
-    height: calc(100vh - 6vh - 1vh);
-    overflow-y: scroll;
-    scrollbar-gutter: stable;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, 5vw);
-    margin-left: 20vw;
-    margin-right: 20vw;
-    grid-template-rows: repeat(auto-fill, 10vw);
-        background-color: rgba(255, 255, 255, 0.5);
-	    justify-content: center;
-    align-items: center;
-        margin-top: 1vh;
+@font-face {
+    font-family: "PlusJakartaSans-Light";
+    src: url(../access/plusjakartasans.woff2)
 }
 
-img.appicon {
-    width: 100%;
+#appluncher,#appbar {
+    grid-template-columns: repeat(auto-fill, 5vw);
+    grid-template-rows: repeat(auto-fill, 10vw);
+    display: grid;
+    justify-content: center;
+    align-items: center;
+}
+#realappbarbtu {
+    display: none;
+}
+#appluncher {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+        background-color: rgb(0 0 0 / 50%);
+	position: absolute;
+	top: 1vh;
+    left: 1vh;
+    width: calc(100vw - 1vw);
+        height: 85vh;
+}
+
+#appbar .appitem {
+    padding-bottom: 0px;
+}
+
+#clock p {
+    padding: 0px;
+    margin: 0px;
+}
+
+
+#clockdate {
+    font-size: 2vh;
+}
+
+#clocktime {
+    font-size: 10vh;
+}
+
+#appbar {
+    bottom: 0px;
+    position: absolute;
+    width: 100vw;
+        height: 15vh;
+}
+
+.appicon {
+	    width: 100%;
+    height: auto;
 }
 
 .appitem {
@@ -26,26 +63,37 @@ img.appicon {
 
 body {
 	background: no-repeat center / 100% url(../access/IMG_5901.JPG);
+	    width: 100vw;
+	    font-family: PlusJakartaSans-Light;
+    height: 100vh;
 }
 
 .appname {
     line-break: anywhere;
-    height: 1.5vh;
+        height: 2vh;
     font-size: 1.5vh;
     overflow: hidden;
     text-align: center;
     text-overflow: ellipsis;
     white-space: nowrap;
+        color: rgb(255, 255, 255);
 }
 
 #clock {
     width: 100%;
     text-align: center;
-font-size: 6vh;
     margin: 0px;
-    color: white;
-    text-decoration: underline;
+    color: rgb(255, 255, 255);
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
 }
 
-.appitem:hover { background-color: rgba(255, 150, 255, 0.5); )
+.appitem:hover { background-color: rgba(255, 150, 255, 0.5); }
+
+#realappbarbtu:not(:checked) ~ #appluncher {
+    display: none !important;
+}
 
