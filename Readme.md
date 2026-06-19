@@ -1,27 +1,31 @@
-A shitty custom home screen for webos 25
+A shitty/hacky custom home screen for webos 6+
 
-It requited `"trustLevel": "trusted",` or webos brew (with root) to work.
+It requited `"trustLevel": "trusted",` or webosbrew (with root) to work.
 
-Add `"trustLevel": "trusted", to `appinfo.json
+Add `"trustLevel": "trusted",` to appinfo.json if you can run it with  `"trustLevel": "trusted",`.
 
-If you can run it with  `"trustLevel": "trusted",`.
+Side note : useually web os on lg tv wont let developer app's trustLevel to be setted to trusted.
 
-Run the fellow command to  build it
+Run the fellow command to build it :
 
 ```
 $ ares-package  .
 
+```
+Run the fellow command on the TV to make it auto start by making it as input :
+
+(For webos6+) (Root Needed) (Optional)
+
+```
+# luna-send-pub -n 1 'luna://com.webos.service.eim/addDevice' '{"appId":"moe.exkc.hoooooooooom","pigImage":"access/IMG_5901.JPG","mvpdIcon":"access/IMG_5901.JPG","description": "QwQHome :3"}'
 
 ```
 
-Run the fellow command on the TV to replace your home screen 
+Run the fellow command on the TV to replace your home screen :
 
 (For webos25) (Root Needed) (Optional)
 
-
 ```
-# luna-send-pub -n 1 'luna://com.webos.service.eim/addDevice' '{"appId":"moe.exkc.hoooooooooom","pigImage":"access/IMG_5901.JPG","mvpdIcon":"access/IMG_5901.JPG","description": "QwQHome :3",}'
- 
 # cp /media/developer/apps/usr/palm/applications/moe.exkc.hoooooooooom/access/replace.sh /var/lib/webosbrew/init.d/
 
 # chmod +x /var/lib/webosbrew/init.d/replace.sh
