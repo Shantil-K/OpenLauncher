@@ -64,6 +64,8 @@
 body,#maindiv {
 	    width: 100vw;
 	    font-family: PlusJakartaSans-Light;
+	        margin: 0px;
+    padding: 0px;
     height: 100vh;
 }
 #maindiv{
