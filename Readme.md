@@ -32,9 +32,9 @@ Run the fellow command on the TV to replace your home screen :
 
 ```
 
- `access/IMG_5901.JPG` is under CC-BY-SA license
+ `access/wallpaper/*` are under CC-BY-SA license
  `access/fallback.png` is proby under Apache License bc it is from in webos oss
- `access/plusjakartasans.woff2` is under  SIL Open Font License
+ `access/plusjakartasans.woff2` is under SIL Open Font License
  `access/appbar.svg` is proby under Apache License bc it is from in https://fonts.google.com/
  
  The rest is under  WTFNMFPL.
