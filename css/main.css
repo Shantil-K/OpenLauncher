@@ -61,7 +61,7 @@
     height: min-content;
 }
 
-body,#maindiv {
+body,#maindiv,#blackmaindiv {
 	    width: 100vw;
 	    font-family: PlusJakartaSans-Light;
 	        margin: 0px;
@@ -72,6 +72,9 @@ body,#maindiv {
 	
 	background: no-repeat center / 100% url(../access/wallpaper/IMG_5901.JPG);
 
+}
+#blackmaindiv{
+	background-color:rgb(0,0,0);
 }
 .appname {
     line-break: anywhere;
