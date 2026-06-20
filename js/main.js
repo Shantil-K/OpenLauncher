@@ -47,7 +47,7 @@ function genappdiv (eachapp,whichappbox) {
 		  const appname = document.createElement("p");
 		  const appicon = document.createElement("img");
 			if(noperm){
-		appicon.src=appdir+'/hack/'+eachapp.folderPath+'/'+eachapp.icon;
+		appicon.src='hack/'+eachapp.folderPath+'/'+eachapp.icon;
 			} else {
 		appicon.src=eachapp.folderPath+'/'+eachapp.icon;
 			}
@@ -122,7 +122,6 @@ barlist.forEach(((eachid) => {
 
 
 document.addEventListener("DOMContentLoaded", (event) => {
-initapplun();
 		 setInterval(() => {
 
           var brclock = new window.PalmServiceBridge();
@@ -136,6 +135,15 @@ initapplun();
 	brclock.call('luna://com.palm.systemservice/time/getSystemTime','{}');
 
     }, 1000);
+
+	 setInterval(() => {
+
+var wallpapers=["IMG_20220626_185224_1.jpg", "IMG_5624.JPG", "IMG_5681.JPG", "IMG_5696.JPG", "IMG_5797.JPG", "IMG_5839.JPG", "IMG_5892.JPG", "IMG_5901.JPG" ];
+maindiv.style='background: no-repeat center / 100% url(access/wallpaper/'+wallpaper[Math.floor(Math.random() * wallpaper.length)]+') !important;' 
+    }, 30 * 1000);
+
+
+initapplun();
 
 });
 
