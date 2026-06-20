@@ -29,16 +29,8 @@ Run the fellow command on the TV to make it auto start by making it as input :
 ```
 
 # Replace
-Run the fellow command on the TV to replace your home screen :
 
-(Root Needed) (Optional)
-
-```
-# cp /media/developer/apps/usr/palm/applications/moe.exkc.hoooooooooom/access/src/access/replace/your_webos_version.sh /var/lib/webosbrew/init.d/
-
-# chmod +x /var/lib/webosbrew/init.d/replace.sh
-
-```
+If you want it to replace your stock home screen then see [here](./src/access/replace).
 
 # License
 
