@@ -1,10 +1,15 @@
 A shitty/hacky custom home screen for webos 6+
 
+![Demo](demo.png)
+
+
 It requited `"trustLevel": "trusted",` or webosbrew (with root) to work.
 
 Add `"trustLevel": "trusted",` to appinfo.json if you can run it with  `"trustLevel": "trusted",`.
 
 Side note : useually web os on lg tv wont let developer app's trustLevel to be setted to trusted.
+
+# Compile
 
 Run the fellow command to build it :
 
@@ -12,6 +17,8 @@ Run the fellow command to build it :
 $ ares-package src
 
 ```
+# Auto-start
+
 Run the fellow command on the TV to make it auto start by making it as input :
 
 (For webos6+) (Root Needed) (Optional)
@@ -21,6 +28,7 @@ Run the fellow command on the TV to make it auto start by making it as input :
 
 ```
 
+# Replace
 Run the fellow command on the TV to replace your home screen :
 
 (Root Needed) (Optional)
@@ -32,9 +40,11 @@ Run the fellow command on the TV to replace your home screen :
 
 ```
 
+# License
+
  `src/access/wallpaper/*` are under CC-BY-SA license
  `src/access/fallback.png` is proby under Apache License bc it is from in webos oss
  `src/access/plusjakartasans.woff2` is under SIL Open Font License
  `src/access/appbar.svg` is proby under Apache License bc it is from in https://fonts.google.com/
- 
- The rest is under  WTFNMFPL.
+
+The rest is under  WTFNMFPL.
