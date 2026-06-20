@@ -16,7 +16,7 @@ console.log("perm:"+noperm);
 			if (noperm){
 			console.log(appdir);
 			if(inited){
-	   bridge.call('luna://org.webosbrew.hbchannel.service/exec','{"command":"luna-send -n 1 -f luna://com.webos.applicationManager/listApps \'{}\'"}');
+	   bridge.call('luna://org.webosbrew.hbchannel.service/exec','{"command":"luna-send -n 1 luna://com.webos.applicationManager/listApps \'{}\'"}');
 
 			} else {
 
@@ -33,7 +33,7 @@ iconhack.call('luna://org.webosbrew.hbchannel.service/exec','{"command":"ln -s /
 		  var bridge = new window.PalmServiceBridge();
 	bridge.onservicecallback =appluncherinit;
 iconhack.onservicecallback= function (e) {
-	   bridge.call('luna://org.webosbrew.hbchannel.service/exec','{"command":"luna-send -n 1 -f luna://com.webos.applicationManager/listApps \'{}\'"}');
+	   bridge.call('luna://org.webosbrew.hbchannel.service/exec','{"command":"luna-send -n 1 luna://com.webos.applicationManager/listApps \'{}\'"}');
 
 };
 permtest.call('luna://com.webos.applicationManager/listApps',"{}");
@@ -167,7 +167,7 @@ initapplun();
 
 };
 	if (noperm){
-	   doireload.call('luna://org.webosbrew.hbchannel.service/exec','{"command":"luna-send -n 1 -f luna://com.webos.applicationManager/listApps \'{}\'"}');
+	   doireload.call('luna://org.webosbrew.hbchannel.service/exec','{"command":"luna-send -n 1 luna://com.webos.applicationManager/listApps \'{}\'"}');
 
 }else {
 	doireload.call('luna://com.webos.applicationManager/listApps',"{}");
