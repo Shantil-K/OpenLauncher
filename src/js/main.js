@@ -5,42 +5,60 @@ let applist;
 let appbardefu;
 	  let noperm=true;
 let appdir='/media/developer/apps/usr/palm/applications/moe.exkc.hoooooooooom';
-function initapplun(){
 
+ function lunacallasroot (url,payload) {
+ //https://github.com/theubusu/genome_launcher_webos/blob/master/src/main.js 
+ // based on getLunaJsonHbChannel();
+		return new Promise((resolve, reject) => {
+		var luna = new window.PalmServiceBridge();
+		luna.call('luna://org.webosbrew.hbchannel.service/exec',JSON.stringify({"command": ("luna-send -n 1 '"+url+"' '"+JSON.stringify(payload)+"'") }));
+		luna.onservicecallback=function (payload) {
+			  try {
+                let outer = JSON.parse(payload);
+                if (!outer.stdoutString) {
+                    resolve(outer.errorText || "not stdout");
+                    return;
+                }
 
-          var iconhack = new window.PalmServiceBridge();
-          var permtest = new window.PalmServiceBridge();
-        permtest.onservicecallback = function(e) {
-	                noperm=(!(JSON.parse(e).errorText === undefined));
-console.log("perm:"+noperm);
-			if (noperm){
-			console.log(appdir);
-			if(inited){
-	   bridge.call('luna://org.webosbrew.hbchannel.service/exec','{"command":"luna-send -n 1 luna://com.webos.applicationManager/listApps \'{}\'"}');
+                resolve(JSON.parse(outer.stdoutString));
+            } catch(e) {
+                reject(e);
+            }
+		}
+		});
+	}
 
-			} else {
+ function lunacall (url,payload) {
+ //https://github.com/theubusu/genome_launcher_webos/blob/master/src/main.js 
+ // based on getLunaJsonHbChannel();
+		return new Promise((resolve, reject) => {
+		var luna = new window.PalmServiceBridge();
+		luna.call(url,JSON.stringify(payload));
+		luna.onservicecallback=function (payload) {
+			  try {
+                let outer = JSON.parse(payload);
+                if (!(outer.errorText===undefined)) {
+                    resolve(outer.errorText || "not stdout");
+                    return;
+                }
 
-iconhack.call('luna://org.webosbrew.hbchannel.service/exec','{"command":"ln -s / '+appdir+'/hack"}');
-				
-}
+                resolve(outer);
+            } catch(e) {
+                reject(e);
+            }
+		}
+		});
+	}
+ function iconhack () {
+ //https://github.com/theubusu/genome_launcher_webos/blob/master/src/main.js 
+ // based on getLunaJsonHbChannel();
+		return new Promise((resolve, reject) => {
+		var luna = new window.PalmServiceBridge();
+luna.call('luna://org.webosbrew.hbchannel.service/exec','{"command":"ln -s / '+appdir+'/hack"}');
+		luna.onservicecallback=function (payload) {resolve(true);}
+		});
+	}
 
-}else {
-	bridge.call('luna://com.webos.applicationManager/listApps',"{}");
-
-}
-
-};
-		  var bridge = new window.PalmServiceBridge();
-	bridge.onservicecallback =appluncherinit;
-iconhack.onservicecallback= function (e) {
-	   bridge.call('luna://org.webosbrew.hbchannel.service/exec','{"command":"luna-send -n 1 luna://com.webos.applicationManager/listApps \'{}\'"}');
-
-};
-permtest.call('luna://com.webos.applicationManager/listApps',"{}");
-
-
-
-}
 function genappdiv (eachapp,whichappbox) {
 
 		  const appitem = document.createElement("div");
@@ -90,17 +108,27 @@ if (l <= 9){
 
 }
 
-let appluncherinit= function (payload) {
-console.log("perm:"+noperm);
+async function initapplun(){
 
-if (noperm){
-	applist=JSON.parse(JSON.parse(payload).stdoutString).apps;
-}else{
-	applist=JSON.parse(payload).apps;
+var permtest=await lunacall('luna://com.webos.applicationManager/listApps',{});
+	                noperm=(typeof permtest === "string");
+if (noperm && (!(inited))){
+iconhack();
 }
-console.log("perm:"+noperm);
-console.log(payload);
-console.log(applist);
+
+			if (noperm){
+var applistraw=await lunacallasroot('luna://com.webos.applicationManager/listApps',{});
+applist=applistraw.apps;
+}else {
+applist=permtest.apps;
+}
+
+appluncherinit();
+
+}
+
+function appluncherinit() {
+
 //barlist=["com.webos.app.camera","com.palm.app.settings"];
 barlist=["com.webos.app.livetv","com.webos.app.hdmi1","com.webos.app.hdmi2","com.webos.app.hdmi3","com.webos.app.hdmi4","com.webos.app.mediadiscovery","com.github.k4zmu2a.space-cadet-pinball","com.famobi.ctr"];
 if (inited){
@@ -120,6 +148,26 @@ barlist.forEach(((eachid) => {
 
 };
 
+async function reload() {
+
+	let newapplist, newapplistraw;
+	if (noperm){
+newapplistraw=await lunacallasroot('luna://com.webos.applicationManager/listApps',{});
+
+}else {
+newapplistraw=await lunacall('luna://com.webos.applicationManager/listApps',{});
+
+}
+console.log(newapplistraw);
+	newapplist=newapplistraw.apps;
+
+if (!( JSON.stringify(applist) === JSON.stringify(newapplist) ) ) {
+	applist=newapplist;
+	console.log("reinit");
+initapplun();
+}
+
+}
 
 document.addEventListener("DOMContentLoaded", (event) => {
 		 setInterval(() => {
@@ -147,32 +195,5 @@ initapplun();
 
 });
 
-document.addEventListener("webOSRelaunch", (event) => {
-
-		  var doireload = new window.PalmServiceBridge();
-doireload.onservicecallback=function (payload) {
-
-	let newapplist;
-if (noperm){
-	newapplist=JSON.parse(JSON.parse(payload).stdoutString).apps;
-}else{
-	newapplist=JSON.parse(payload).apps;
-}
-
-
-if (!( JSON.stringify(applist) === JSON.stringify(newapplist) ) ) {
-initapplun();
-	console.log("reinit");
-}
-
-};
-	if (noperm){
-	   doireload.call('luna://org.webosbrew.hbchannel.service/exec','{"command":"luna-send -n 1 luna://com.webos.applicationManager/listApps \'{}\'"}');
-
-}else {
-	doireload.call('luna://com.webos.applicationManager/listApps',"{}");
-
-}
-
-});
+document.addEventListener("webOSRelaunch", reload );
 
