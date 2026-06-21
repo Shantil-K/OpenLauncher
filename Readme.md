@@ -1,4 +1,4 @@
-A shitty/hacky custom home screen for webos 6+
+A shitty/hacky custom home screen for webos 23+
 
 ![Demo](demo.png)
 
