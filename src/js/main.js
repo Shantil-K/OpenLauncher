@@ -3,8 +3,10 @@
 let inited=false;
 let applist;
 let appbardefu;
-	  let noperm=true;
-let appdir='/media/developer/apps/usr/palm/applications/moe.exkc.hoooooooooom';
+	  let noappperm=true;
+	  let turstedapp=false,rooted=false;
+let appid='moe.exkc.hoooooooooom'
+let appdir='/media/developer/apps/usr/palm/applications/'+appid;
 
  function lunacallasroot (url,payload) {
  //https://github.com/theubusu/genome_launcher_webos/blob/master/src/main.js 
@@ -64,10 +66,14 @@ function genappdiv (eachapp,whichappbox) {
 		  const appitem = document.createElement("div");
 		  const appname = document.createElement("p");
 		  const appicon = document.createElement("img");
-			if(noperm){
-		appicon.src='hack/'+eachapp.folderPath+'/'+eachapp.icon;
-			} else {
+			if(turstedapp){
 		appicon.src=eachapp.folderPath+'/'+eachapp.icon;
+			} else {
+		if(rooted) {
+		appicon.src='hack/'+eachapp.folderPath+'/'+eachapp.icon;
+			}else{
+appicon.src="/access/fallback.png";
+			}
 			}
 		appicon.setAttribute("class","appicon");
 		appicon.addEventListener("error", function(e){
@@ -95,6 +101,18 @@ console.log(clickelm);
 		whichappbox.appendChild(appitem);
 	}
 
+	function toasty (mgs) {
+  var toast = new window.PalmServiceBridge();
+    toast.call('luna://com.webos.notification/createToast', '{"message" : "'+mgs+'"}'  );
+		return new Promise((resolve, reject) => {
+			toast.onservicecallback=function (res) {
+			resolve(true);
+			}
+			
+		});
+
+	}
+
 function addzero (l){
 
 
@@ -108,27 +126,46 @@ if (l <= 9){
 
 }
 
-async function initapplun(){
+async function initpermcheck(){
 
 var permtest=await lunacall('luna://com.webos.applicationManager/listApps',{});
-	                noperm=(typeof permtest === "string");
-if (noperm && (!(inited))){
+	                noappperm=(typeof permtest === "string");
+
+var rootcheck=await lunacall('luna://org.webosbrew.hbchannel.service/getConfiguration',{});
+	if (typeof rootcheck === "string"){
+		rooted=false;
+	} else {
+	       rooted=rootcheck.root;
+	}
+
+if (noappperm && rooted && (!(inited))){
 iconhack();
 }
 
-			if (noperm){
+			if (noappperm){
+	if (rooted){
 var applistraw=await lunacallasroot('luna://com.webos.applicationManager/listApps',{});
 applist=applistraw.apps;
+	} else {
+		await toasty("This app required app related permission or root.");
+		window.webOSSystem.close();
+	}
 }else {
 applist=permtest.apps;
 }
 
-appluncherinit();
-
+applist.some((eachapp) => {if (eachapp.id === appid) {
+	appdir=eachapp.folderPath;
+	turstedapp=(eachapp.trustLevel==="trusted");
+}});
+if (!(turstedapp && rooted )) {
+		await toasty("This app required trusted trustLevel or root.");
+	
+}
 }
 
 function appluncherinit() {
-
+console.log(applist);
 //barlist=["com.webos.app.camera","com.palm.app.settings"];
 barlist=["com.webos.app.livetv","com.webos.app.hdmi1","com.webos.app.hdmi2","com.webos.app.hdmi3","com.webos.app.hdmi4","com.webos.app.mediadiscovery","com.github.k4zmu2a.space-cadet-pinball","com.famobi.ctr"];
 if (inited){
@@ -151,7 +188,7 @@ barlist.forEach(((eachid) => {
 async function reload() {
 
 	let newapplist, newapplistraw;
-	if (noperm){
+	if (noappperm){
 newapplistraw=await lunacallasroot('luna://com.webos.applicationManager/listApps',{});
 
 }else {
@@ -164,13 +201,13 @@ console.log(newapplistraw);
 if (!( JSON.stringify(applist) === JSON.stringify(newapplist) ) ) {
 	applist=newapplist;
 	console.log("reinit");
-initapplun();
+appluncherinit();
 }
 
 }
-
-document.addEventListener("DOMContentLoaded", (event) => {
-		 setInterval(() => {
+async function inithomescreen() {
+await initpermcheck();
+	 setInterval(() => {
 
           var brclock = new window.PalmServiceBridge();
 	brclock.onservicecallback= function (e) {
@@ -191,9 +228,11 @@ maindiv.style='background: no-repeat center / 100% url(access/wallpaper/'+wallpa
     }, 30 * 1000);
 
 
-initapplun();
+appluncherinit();
 
-});
+}
+
+document.addEventListener("DOMContentLoaded",inithomescreen);
 
 document.addEventListener("webOSRelaunch", reload );
 
