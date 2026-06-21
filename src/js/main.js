@@ -147,7 +147,7 @@ iconhack();
 var applistraw=await lunacallasroot('luna://com.webos.applicationManager/listApps',{});
 applist=applistraw.apps;
 	} else {
-		await toasty("This app required app related permission or root.");
+		await toasty("This app required app related permission or root.This app is closing due to insufficient permission...");
 		window.webOSSystem.close();
 	}
 }else {
@@ -158,8 +158,8 @@ applist.some((eachapp) => {if (eachapp.id === appid) {
 	appdir=eachapp.folderPath;
 	turstedapp=(eachapp.trustLevel==="trusted");
 }});
-if (!(turstedapp && rooted )) {
-		await toasty("This app required trusted trustLevel or root.");
+if (!(turstedapp || rooted )) {
+		await toasty("This app required trusted trustLevel or root.Thing will break without either of those. ");
 	
 }
 }
