@@ -76,6 +76,9 @@ appicon.src="/access/fallback.png";
 			}
 			}
 		appicon.setAttribute("class","appicon");
+	if(!(eachapp.iconColor === undefined)) {
+		appicon.style="background-color : " + eachapp.iconColor +";";
+	}
 		appicon.addEventListener("error", function(e){
 			e.target.src=appdir+"/access/fallback.png";
 		});
