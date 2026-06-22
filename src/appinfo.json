@@ -9,7 +9,8 @@
 "resolution": [
                 "3840x2160",
                 "1920x1080",
-                "1280x720"
+                "1280x720",
+		"854×480"
         ],
 
         "supportTouchMode": "full",
