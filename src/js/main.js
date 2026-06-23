@@ -78,7 +78,7 @@ var rootcheck=await lunacall('luna://org.webosbrew.hbchannel.service/getConfigur
 	}
 
 if (noappperm && rooted && (!(inited))){
-iconhack();
+iconhack(appdir);
 }
 
 			if (noappperm){
