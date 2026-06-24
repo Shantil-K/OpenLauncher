@@ -16,6 +16,7 @@
     display: none;
 }
 #appluncher {
+	overflow-y: overlay !important;
     overflow-y: scroll;
     scrollbar-gutter: stable;
         background-color: rgb(0 0 0 / 50%);
