@@ -14,6 +14,7 @@
         ],
 
         "supportTouchMode": "full",
+	  "disableBackHistoryAPI": true,
         "supportPortraitMode": true,
   "title": "QwQHome",
   "icon": "icon.png",
