@@ -20,6 +20,5 @@
   "icon": "icon.png",
   "largeIcon": "largeIcon.png",
   "noSplashOnLaunch": true,
-  "supportGIP": true,
-  "handlesRelaunch":true
+  "supportGIP": true
 }
