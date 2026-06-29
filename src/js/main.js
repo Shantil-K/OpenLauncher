@@ -165,17 +165,17 @@ await initpermcheck();
 var wallpapers=["IMG_20211017_181128.jpg", "IMG_5624.JPG", "IMG_5681.JPG", "IMG_5696.JPG", "IMG_5797.JPG", "IMG_5839.JPG", "IMG_5892.JPG", "IMG_5901.JPG" ];
 maindiv.style='background: no-repeat center / 100% url(access/wallpaper/'+wallpapers[Math.floor(Math.random() * wallpapers.length)]+') !important;' 
     }, 30 * 1000);
-
-
-appluncherinit();
-
-}
 //back button
 window.addEventListener("keydown", function(inEvent){
 	if (inEvent.keyCode === 461) {
 		realappbarbtu.click();
 	}
 });
+
+
+appluncherinit();
+
+}
 
 document.addEventListener("DOMContentLoaded",inithomescreen);
 
