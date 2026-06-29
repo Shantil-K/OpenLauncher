@@ -170,6 +170,12 @@ maindiv.style='background: no-repeat center / 100% url(access/wallpaper/'+wallpa
 appluncherinit();
 
 }
+//back button
+window.addEventListener("keydown", function(inEvent){
+	if (inEvent.keyCode === 461) {
+		realappbarbtu.click();
+	}
+});
 
 document.addEventListener("DOMContentLoaded",inithomescreen);
 
