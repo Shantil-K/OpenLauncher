@@ -161,9 +161,13 @@ await initpermcheck();
     }, 1000);
 
 	 setInterval(() => {
+let wallpapernow='background: no-repeat center / 100% url(access/wallpaper/'+wallpapers[Math.floor(Math.random() * wallpapers.length)]+') !important;' 
+//preload wallpaper so it would look smoother.
+blackmaindiv.style=wallpapernow;
 
-maindiv.style='background: no-repeat center / 100% url(access/wallpaper/'+wallpapers[Math.floor(Math.random() * wallpapers.length)]+') !important;' 
-    }, 30 * 1000);
+		 setTimeout(() => {
+maindiv.style=wallpapernow;
+		 },10 *1000);        }, 20 * 1000);
 //back button
 window.addEventListener("keydown", function(inEvent){
 	if (inEvent.keyCode === 461) {
