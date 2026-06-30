@@ -62,7 +62,7 @@
     height: min-content;
 }
 
-body,#maindiv,#blackmaindiv {
+body,#maindiv,#prefetchmaindiv {
 	    width: 100vw;
 	    font-family: PlusJakartaSans-Light;
 	        margin: 0px;
@@ -74,7 +74,7 @@ body,#maindiv,#blackmaindiv {
 	background: no-repeat center / 100% url(../access/wallpaper/IMG_20211017_181128.jpg);
 
 }
-#blackmaindiv{
+#prefetchmaindiv{
 	background-color:rgb(0,0,0);
 }
 .appname {

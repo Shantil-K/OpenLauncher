@@ -163,7 +163,7 @@ await initpermcheck();
 	 setInterval(() => {
 let wallpapernow='background: no-repeat center / 100% url(access/wallpaper/'+wallpapers[Math.floor(Math.random() * wallpapers.length)]+') !important;' 
 //preload wallpaper so it would look smoother.
-blackmaindiv.style=wallpapernow;
+prefetchmaindiv.style=wallpapernow;
 
 		 setTimeout(() => {
 maindiv.style=wallpapernow;
