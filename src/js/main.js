@@ -16,13 +16,12 @@ function genappdiv (eachapp,whichappbox) {
 		  const appicon = document.createElement("img");
 			if(turstedapp){
 		appicon.src=eachapp.folderPath+'/'+eachapp.icon;
-			} else {
-		if(rooted) {
+			} else if(rooted) {
 		appicon.src='hack/'+eachapp.folderPath+'/'+eachapp.icon;
 			}else{
 appicon.src="/access/fallback.png";
 			}
-			}
+			
 		appicon.setAttribute("class","appicon");
 	if(!(eachapp.iconColor === undefined)) {
 		appicon.style="background-color : " + eachapp.iconColor +";";
