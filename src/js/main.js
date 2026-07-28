@@ -37,7 +37,6 @@ appicon.src="/access/fallback.png";
 		appitem.appendChild(appicon);
 		appitem.appendChild(appname);
 		appitem.addEventListener("click", function(e){
-var brapp=new window.PalmServiceBridge();
 			let clickelm;
 			if (e.target.getAttribute("data-appid")==null){
 				clickelm=e.target.parentElement.getAttribute("data-appid");
@@ -45,8 +44,11 @@ var brapp=new window.PalmServiceBridge();
 				clickelm=e.target.getAttribute("data-appid");
 
 			}
-		brapp.call('luna://com.webos.service.applicationManager/launch','{"id":"'+clickelm+'"}');
-			
+			if(rooted){
+		lunacallasroot('luna://com.webos.service.applicationManager/launch',{"id":clickelm});
+			} else {
+		lunacall('luna://com.webos.service.applicationManager/launch',{"id":clickelm});
+			}
 console.log(clickelm);
 		}); 
 		whichappbox.appendChild(appitem);
