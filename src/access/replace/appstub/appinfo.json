@@ -1,0 +1,15 @@
+{
+  "id": "com.webos.app.home",
+  "version": "0.0.0",
+  "vendor": "exkc",
+  "type": "web",
+  "main": "index.html",
+  "defaultWindowType": "overlay",
+  "noSplashOnLaunch" : true,
+   "spinnerOnLaunch": false,
+    "transparent":true,
+  "title": "Home",
+          "visible": false,
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png"
+}
