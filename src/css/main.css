@@ -25,6 +25,7 @@
     left: 1vw;
     width: calc(100vw - 2vw);
         height: 85vh;
+	    scrollbar-width: none;
 }
 
 #appbar .appitem {
