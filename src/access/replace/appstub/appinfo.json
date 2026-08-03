@@ -1,6 +1,7 @@
 {
   "id": "com.webos.app.home",
   "version": "0.0.0",
+  "appCategory": ["home"],
   "vendor": "exkc",
   "type": "web",
   "main": "index.html",

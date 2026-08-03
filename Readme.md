@@ -27,6 +27,9 @@ Run the fellow command on the TV to make it auto start by making it as input :
 # luna-send-pub -n 1 'luna://com.webos.service.eim/addDevice' '{"appId":"moe.exkc.hoooooooooom","pigImage":"access/wallpaper/IMG_20211017_181128.jpg","mvpdIcon":"access/wallpaper/IMG_20211017_181128.jpg","description": "QwQHome :3"}'
 
 ```
+# Post-Insatll setup for webos 26
+
+WiP
 
 # Replace
 

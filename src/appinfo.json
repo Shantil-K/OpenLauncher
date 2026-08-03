@@ -6,6 +6,7 @@
   "type": "web",
   "main": "index.html",
   "requiredPermissions": ["all"],
+  "appCategory": ["home"],
 "resolution": [
                 "3840x2160",
                 "1920x1080",
