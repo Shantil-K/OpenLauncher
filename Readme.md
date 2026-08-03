@@ -29,7 +29,15 @@ Run the fellow command on the TV to make it auto start by making it as input :
 ```
 # Post-Insatll setup for webos 26
 
-WiP
+If you update/install this app in webos then u would need to run this command and reboot.
+
+(See https://github.com/webosbrew/webos-homebrew-channel/pull/233/changes/caca830efab9f34245cc586746b6acd5ba6fd351)
+
+
+```
+# echo '{"moe.exkc.hoooooooooom-*":["public"]}'  > /var/luna-service2-dev/client-permissions.d/moe.exkc.hoooooooooom.app.json 
+
+```
 
 # Replace
 
