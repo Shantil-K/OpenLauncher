@@ -69,17 +69,17 @@ if (l <= 9){
 async function initpermcheck(){
 
 var permtest=await lunacall('luna://com.webos.applicationManager/listApps',{});
-	                noappperm=(typeof permtest === "string");
+	                noappperm=(!(permtest.errorText===undefined));
 
 var rootcheck=await lunacall('luna://org.webosbrew.hbchannel.service/getConfiguration',{});
-	if (typeof rootcheck === "string"){
-		rooted=false;
-	} else {
+	if (rootcheck.errorText===undefined){
 	       rooted=rootcheck.root;
+	} else {
+		rooted=false;
 	}
 
 if (noappperm && rooted && (!(inited))){
-iconhack(appdir);
+await iconhack(appdir);
 }
 
 			if (noappperm){
