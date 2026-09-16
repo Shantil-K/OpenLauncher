@@ -107,7 +107,7 @@ if (!(turstedapp || rooted )) {
 function appluncherinit() {
 console.log(applist);
 //barlist=["com.webos.app.camera","com.palm.app.settings"];
-barlist=["com.webos.app.livetv","com.webos.app.hdmi1","com.webos.app.hdmi2","com.webos.app.hdmi3","com.webos.app.hdmi4","com.webos.app.mediadiscovery","com.famobi.ctr","com.halfbrick.fruitninja",];
+barlist=["com.webos.app.livetv","com.webos.app.hdmi1","com.webos.app.hdmi2","com.webos.app.hdmi3","com.webos.app.hdmi4","com.webos.app.mediadiscovery","com.famobi.ctr","com.halfbrick.fruitninja","com.github.k4zmu2a.space-cadet-pinball",];
 if (inited){
 
 	appluncher.innerHTML="";
