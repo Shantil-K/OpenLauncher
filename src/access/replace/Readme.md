@@ -6,11 +6,11 @@ There are way method for doing do so :
 
 `keyfilters-25.sh` (For webos 25) : In webos 25, the home screen package is no longer hardcoded.It seem now it use launchDefaultApp to launch home. that luna call seem to be launching default home from settings in applications manager so the script patched that keyfiller to launch this custom home via hardcoding.
 
-`appstub-6-25.sh` (For webos 6-25) : In seem restarting sam would make webos rescran all the system app 's appinfo.json therefore it is possiable to replace the stock home with a simple webapp that only open this home and the script is for doing just that. (It might break Always Ready).
+`appstub-6-25.sh` (For webos 6-25) : In seem restarting sam would make webos rescran all the system app 's appinfo.json therefore it is possiable to replace the stock home with a simple webapp that only open this home and the script is for doing just that. 
 
 `appdefault-25-26.sh` (For webos 25-26) : In webos 25-26, the home screen package is no longer hardcoded.It seem now it use launchDefaultApp to launch home. This script set this home as DefaultApp of home.
 
-Run the fellow command on the TV to replace your home screen :
+Run the fellow command on the TV to replace your home screen (expect for `appdefault-25-26.sh`) :
 
 (Root Needed) (Optional)
 
@@ -21,3 +21,9 @@ Run the fellow command on the TV to replace your home screen :
 
 ```
 
+For `appdefault-25-26.sh` :
+
+```
+# /media/developer/apps/usr/palm/applications/moe.exkc.hoooooooooom/access/replace/appdefault-25-26.sh
+
+```
