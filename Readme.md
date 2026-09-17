@@ -2,6 +2,16 @@ A shitty/hacky custom home screen for webos 6+
 
 ![Demo](demo.png)
 
+# Credits
+
+This is based on the original **QwQHome** launcher created by **exkc**, originally
+hosted at [git.exkc.moe/qvh/moe.exkc.hoooooooooom](https://git.exkc.moe/qvh/moe.exkc.hoooooooooom).
+This repo isn't a native GitHub fork (the original isn't hosted on GitHub), but
+all credit for the original design and implementation goes to exkc.
+
+It also depends on [QwQwebosTV.js](https://git.exkc.moe/qvh/QwQwebosTV.js), a
+helper library also written by exkc.
+
 
 It requited `"trustLevel": "trusted",` or webosbrew (with root) to work.
 
