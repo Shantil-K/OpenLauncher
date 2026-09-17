@@ -1,27 +1,29 @@
-A shitty/hacky custom home screen for webos 6+
+A Custom Home screen for Webos 6+
 
 ![Demo](demo.png)
+
+Tested on LG C2
 
 # Credits
 
 This is based on the original **QwQHome** launcher created by **exkc**, originally
 hosted at [git.exkc.moe/qvh/moe.exkc.hoooooooooom](https://git.exkc.moe/qvh/moe.exkc.hoooooooooom).
-This repo isn't a native GitHub fork (the original isn't hosted on GitHub), but
-all credit for the original design and implementation goes to exkc.
+
+All credit for the original design and implementation goes to exkc.
 
 It also depends on [QwQwebosTV.js](https://git.exkc.moe/qvh/QwQwebosTV.js), a
 helper library also written by exkc.
 
 
-It requited `"trustLevel": "trusted",` or webosbrew (with root) to work.
+It requires `"trustLevel": "trusted",` or Webosbrew (with root) to work.
 
 Add `"trustLevel": "trusted",` to appinfo.json if you can run it with  `"trustLevel": "trusted",`.
 
-Side note : useually web os on lg tv wont let developer app's trustLevel to be setted to trusted.
+Side note : usually web os on lg tv wont let developer app's trustLevel to be setted to trusted.
 
 # Compile
 
-Run the fellow command to build it :
+Run the following command to build it :
 
 ```
 $ ares-package src
@@ -29,7 +31,7 @@ $ ares-package src
 ```
 # Auto-start
 
-Run the fellow command on the TV to make it auto start by making it as input :
+Run below command on the TV to make it auto start by making it as input :
 
 (For webos6+) (Root Needed) (Optional)
 
@@ -37,7 +39,7 @@ Run the fellow command on the TV to make it auto start by making it as input :
 # luna-send-pub -n 1 'luna://com.webos.service.eim/addDevice' '{"appId":"com.homebrew.openlauncher","pigImage":"access/wallpaper/IMG_20211017_181128.jpg","mvpdIcon":"access/wallpaper/IMG_20211017_181128.jpg","description": "OpenLauncher :3"}'
 
 ```
-# Post-Insatll setup for webos 26
+# Post-Insatll setup for Webos 26
 
 If you update/install this app in webos then u would need to run this command and reboot.
 
