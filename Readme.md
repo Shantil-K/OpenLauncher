@@ -24,7 +24,7 @@ Run the fellow command on the TV to make it auto start by making it as input :
 (For webos6+) (Root Needed) (Optional)
 
 ```
-# luna-send-pub -n 1 'luna://com.webos.service.eim/addDevice' '{"appId":"com.homebrew.openlauncher","pigImage":"access/wallpaper/IMG_20211017_181128.jpg","mvpdIcon":"access/wallpaper/IMG_20211017_181128.jpg","description": "QwQHome :3"}'
+# luna-send-pub -n 1 'luna://com.webos.service.eim/addDevice' '{"appId":"com.homebrew.openlauncher","pigImage":"access/wallpaper/IMG_20211017_181128.jpg","mvpdIcon":"access/wallpaper/IMG_20211017_181128.jpg","description": "OpenLauncher :3"}'
 
 ```
 # Post-Insatll setup for webos 26

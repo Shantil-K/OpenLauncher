@@ -1,7 +1,7 @@
 {
   "id": "com.homebrew.openlauncher",
   "version": "2.0.0",
-  "vendor": "exkc",
+  "vendor": "TharaBhaiDoraemon",
   "spinnerOnLaunch":false,
   "type": "web",
   "main": "index.html",
@@ -17,7 +17,7 @@
         "supportTouchMode": "full",
 	  "disableBackHistoryAPI": true,
         "supportPortraitMode": true,
-  "title": "QwQHome",
+  "title": "OpenLauncher",
   "icon": "icon.png",
   "largeIcon": "largeIcon.png",
   "noSplashOnLaunch": true,
