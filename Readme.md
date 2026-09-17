@@ -24,7 +24,7 @@ Run the fellow command on the TV to make it auto start by making it as input :
 (For webos6+) (Root Needed) (Optional)
 
 ```
-# luna-send-pub -n 1 'luna://com.webos.service.eim/addDevice' '{"appId":"moe.exkc.hoooooooooom","pigImage":"access/wallpaper/IMG_20211017_181128.jpg","mvpdIcon":"access/wallpaper/IMG_20211017_181128.jpg","description": "QwQHome :3"}'
+# luna-send-pub -n 1 'luna://com.webos.service.eim/addDevice' '{"appId":"com.homebrew.openlauncher","pigImage":"access/wallpaper/IMG_20211017_181128.jpg","mvpdIcon":"access/wallpaper/IMG_20211017_181128.jpg","description": "QwQHome :3"}'
 
 ```
 # Post-Insatll setup for webos 26
@@ -35,7 +35,7 @@ If you update/install this app in webos then u would need to run this command an
 
 
 ```
-# echo '{"moe.exkc.hoooooooooom-*":["public"]}'  > /var/luna-service2-dev/client-permissions.d/moe.exkc.hoooooooooom.app.json 
+# echo '{"com.homebrew.openlauncher-*":["public"]}'  > /var/luna-service2-dev/client-permissions.d/com.homebrew.openlauncher.app.json 
 
 ```
 

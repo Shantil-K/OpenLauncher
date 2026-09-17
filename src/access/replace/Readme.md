@@ -15,7 +15,7 @@ Run the fellow command on the TV to replace your home screen (expect for `appdef
 (Root Needed) (Optional)
 
 ```
-# cp /media/developer/apps/usr/palm/applications/moe.exkc.hoooooooooom/access/replace/method.sh /var/lib/webosbrew/init.d/
+# cp /media/developer/apps/usr/palm/applications/com.homebrew.openlauncher/access/replace/method.sh /var/lib/webosbrew/init.d/
 
 # chmod +x /var/lib/webosbrew/init.d/replace.sh
 
@@ -24,6 +24,6 @@ Run the fellow command on the TV to replace your home screen (expect for `appdef
 For `appdefault-25-26.sh` :
 
 ```
-# /media/developer/apps/usr/palm/applications/moe.exkc.hoooooooooom/access/replace/appdefault-25-26.sh
+# /media/developer/apps/usr/palm/applications/com.homebrew.openlauncher/access/replace/appdefault-25-26.sh
 
 ```

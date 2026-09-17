@@ -3,7 +3,7 @@
 
 cd /tmp/
 
-sed 's|com.webos.app.browser|moe.exkc.hoooooooooom|g' /usr/palm/applications/com.webos.app.quicklinkcopilot/lib/libapp.so > libapp.so
+sed 's|com.webos.app.browser|com.homebrew.openlauncher|g' /usr/palm/applications/com.webos.app.quicklinkcopilot/lib/libapp.so > libapp.so
 
 mount --rbind ./libapp.so /usr/palm/applications/com.webos.app.home/lib/libapp.so
 

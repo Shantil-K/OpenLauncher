@@ -5,7 +5,7 @@ let applist;
 let appbardefu;
 	  let noappperm=true;
 	  let turstedapp=false,rooted=false;
-let appid='moe.exkc.hoooooooooom'
+let appid='com.homebrew.openlauncher'
 let appdir='/media/developer/apps/usr/palm/applications/'+appid;
 
  
