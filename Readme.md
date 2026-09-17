@@ -60,4 +60,4 @@ If you want it to replace your stock home screen then see [here](./src/access/re
  `src/access/plusjakartasans.woff2` is under SIL Open Font License
  `src/access/appbar.svg` is proby under Apache License bc it is from in https://fonts.google.com/
 
-The rest is under  WTFNMFPL.
+The rest is under the GNU General Public License v3.0 (GPLv3), see [LICENSE](./LICENSE).
