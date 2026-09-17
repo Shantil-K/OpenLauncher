@@ -12,7 +12,8 @@ hosted at [git.exkc.moe/qvh/moe.exkc.hoooooooooom](https://git.exkc.moe/qvh/moe.
 All credit for the original design and implementation goes to exkc.
 
 It also depends on [QwQwebosTV.js](https://git.exkc.moe/qvh/QwQwebosTV.js), a
-helper library also written by exkc.
+helper library also written by exkc, vendored directly at
+`src/js/lib/QwQwebosTV.js/main.js` so a plain clone builds without extra steps.
 
 
 It requires `"trustLevel": "trusted",` or Webosbrew (with root) to work.
@@ -61,5 +62,6 @@ If you want it to replace your stock home screen then see [here](./src/access/re
  `src/access/fallback.png` is proby under Apache License bc it is from in webos oss
  `src/access/plusjakartasans.woff2` is under SIL Open Font License
  `src/access/appbar.svg` is proby under Apache License bc it is from in https://fonts.google.com/
+ `src/js/lib/QwQwebosTV.js/main.js` is under the WTFNMFPL license (see its SPDX header)
 
 The rest is under the GNU General Public License v3.0 (GPLv3), see [LICENSE](./LICENSE).
