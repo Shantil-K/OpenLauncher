@@ -157,13 +157,14 @@ await initpermcheck();
     }, 1000);
 
 	 setInterval(() => {
-let wallpapernow='background: no-repeat center / 100% url(access/wallpaper/'+wallpapers[Math.floor(Math.random() * wallpapers.length)]+') !important;' 
-//preload wallpaper so it would look smoother.
-prefetchmaindiv.style=wallpapernow;
-
-		 setTimeout(() => {
-maindiv.style=wallpapernow;
-		 },10 *1000);        }, 20 * 1000);
+let wallpaperfile=wallpapers[Math.floor(Math.random() * wallpapers.length)];
+let preload=new Image();
+preload.src='access/wallpaper/'+wallpaperfile;
+//force the decode to happen now, off the swap, so the swap itself is a cheap composite instead of a stall.
+preload.decode().catch(()=>{}).then(() => {
+maindiv.style='background: no-repeat center / 100% url(access/wallpaper/'+wallpaperfile+') !important;';
+});
+    }, 20 * 1000);
 //back button
 window.addEventListener("keydown", function(inEvent){
 	if (inEvent.keyCode === 461) {
