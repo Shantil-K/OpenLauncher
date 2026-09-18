@@ -149,15 +149,10 @@ async function inithomescreen() {
 await initpermcheck();
 	 setInterval(() => {
 
-          var brclock = new window.PalmServiceBridge();
-	brclock.onservicecallback= function (e) {
-	let ltime=JSON.parse(e).localtime;
-	
-	clocktime.innerText=addzero(ltime.hour)+':'+addzero(ltime.minute)+':'+ addzero(ltime.second);
-	clockdate.innerText=addzero(ltime.year)+'/'+addzero(ltime.month)+'/'+addzero(ltime.day) ;
+	let now=new Date();
 
-};
-	brclock.call('luna://com.palm.systemservice/time/getSystemTime','{}');
+	clocktime.innerText=addzero(now.getHours())+':'+addzero(now.getMinutes())+':'+ addzero(now.getSeconds());
+	clockdate.innerText=now.getFullYear()+'/'+addzero(now.getMonth()+1)+'/'+addzero(now.getDate()) ;
 
     }, 1000);
 
