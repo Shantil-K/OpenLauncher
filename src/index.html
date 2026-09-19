@@ -10,12 +10,14 @@
 
 <link rel="stylesheet" href="css/main.css">
 <script src="js/wallpaper.js"></script>
+<script src="js/aerials.js"></script>
+<script src="js/icons.js"></script>
 	<script src="js/lib/QwQwebosTV.js/main.js"></script>  
 <script src="js/main.js"></script>
 
 <body>
-	<!-- Wallpaper is a looping video (hardware decoded, unlike CSS background images). Built by scripts/make-wallpaper-video.sh; if it is missing the old image rotation takes over. -->
-	<video id="bgvideo" src="access/wallpaper/loop.mp4" autoplay loop muted playsinline onerror="startimagewallpapers()" onloadedmetadata="randomstart(this)"></video>
+	<!-- Wallpaper is a video (hardware decoded, unlike CSS background images), driven by startbackground() in main.js: network videos from aerials.js, then the local loop.mp4 from scripts/make-wallpaper-video.sh, then rotating images. -->
+	<video id="bgvideo" autoplay muted playsinline></video>
 	<div id="prefetchmaindiv">
 	<!-- Hack : make appluncher always loaded (just hidden) so it can be faster when i open/close it -->
 	<div id="maindiv">
@@ -26,6 +28,7 @@
 	</div>
 	<div id="appluncher"></div>
 	<button id="editbtn">Edit</button>
+	<div id="carryhint">Hover another app to move it there. Rest on it to drop.</div>
 	<div id="appbar">
 
 

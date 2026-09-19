@@ -5,14 +5,20 @@ let editing=false;
 const SETTINGS_KEY='openlauncher.settings';
 // used until the user pins/unpins something for the first time
 const DEFAULT_PINNED=["com.webos.app.livetv","com.webos.app.hdmi1","com.webos.app.hdmi2","com.webos.app.hdmi3","com.webos.app.hdmi4","com.webos.app.mediadiscovery","com.famobi.ctr","com.halfbrick.fruitninja","com.github.k4zmu2a.space-cadet-pinball"];
-let settings={pinned:null,hidden:[]};
+let settings={pinned:null,hidden:[],order:[]};
+// hover-only reordering: rest on a tile's Move zone to pick the app up, hover other tiles to move it, rest on it to drop
+const PICKUP_MS=875;
+const DROP_MS=700;
+let carrying=null;
+let droptimer=null;
 	  let noappperm=true;
 	  let turstedapp=false,rooted=false;
 let appid='com.homebrew.openlauncher'
 let appdir='/media/developer/apps/usr/palm/applications/'+appid;
 
  
-function genappdiv (eachapp,whichappbox) {
+// Built once per app and kept (see tilecache), so changing the order, pins or hidden apps never recreates the icons.
+function maketile (eachapp,inbar) {
 
 		  const appitem = document.createElement("div");
 		  const appname = document.createElement("p");
@@ -34,29 +40,49 @@ appicon.src="/access/fallback.png";
 		});
 		appname.innerText=eachapp.title;
 		appname.setAttribute("class","appname");
-		appitem.setAttribute("class",ishidden(eachapp.id)?"appitem hiddenapp":"appitem");
+		appitem.setAttribute("class","appitem");
 		appitem.setAttribute("data-appid",eachapp.id);
 		appitem.appendChild(appicon);
 		appitem.appendChild(appname);
+		// shown over the tile while hovering it in edit mode; labels and icons are filled in by updatetile()
 		const appctl=document.createElement("div");
 		appctl.setAttribute("class","appctl");
-		const pinbtn=document.createElement("button");
-		pinbtn.innerText=ispinned(eachapp.id)?"Unpin":"Pin";
-		pinbtn.addEventListener("click", function(e){
-			e.stopPropagation();
-			togglepin(eachapp.id);
-		});
-		appctl.appendChild(pinbtn);
-		if(whichappbox!==appbar){
-			const hidebtn=document.createElement("button");
-			hidebtn.innerText=ishidden(eachapp.id)?"Show":"Hide";
-			hidebtn.addEventListener("click", function(e){
-				e.stopPropagation();
-				togglehide(eachapp.id);
-			});
-			appctl.appendChild(hidebtn);
+		appitem.pinbtn=ctlbutton(() => togglepin(eachapp.id));
+		if(inbar){ appitem.pinbtn.classList.add("wide"); }
+		appctl.appendChild(appitem.pinbtn);
+		if(!inbar){
+			appitem.hidebtn=ctlbutton(() => togglehide(eachapp.id));
+			appctl.appendChild(appitem.hidebtn);
 		}
+		const movezone=document.createElement("div");
+		movezone.setAttribute("class","movezone");
+		movezone.setAttribute("title","Hover to reorder");
+		movezone.setAttribute("aria-label","Hover to reorder");
+		const moveicon=document.createElement("span");
+		moveicon.innerHTML=iconsvg("reorder");
+		movezone.appendChild(moveicon);
+		let pickuptimer=null;
+		movezone.addEventListener("mouseenter", function(){
+			pickuptimer=setTimeout(() => startcarry(eachapp.id,inbar),PICKUP_MS);
+		});
+		movezone.addEventListener("mouseleave", function(){
+			clearTimeout(pickuptimer);
+		});
+		appctl.appendChild(movezone);
 		appitem.appendChild(appctl);
+
+		appitem.addEventListener("mouseenter", function(){
+			if(!carrying || carrying.inbar!==inbar){ return; }
+			if(carrying.id!==eachapp.id){
+				movecarried(eachapp.id);
+			} else if(carrying.armed){
+				droptimer=setTimeout(stopcarry,DROP_MS);
+			}
+		});
+		appitem.addEventListener("mouseleave", function(){
+			clearTimeout(droptimer);
+			if(carrying && carrying.id===eachapp.id){ carrying.armed=true; }
+		});
 
 		appitem.addEventListener("click", function(){
 			if(editing){ return; }
@@ -66,8 +92,95 @@ appicon.src="/access/fallback.png";
 				lunacall('luna://com.webos.service.applicationManager/launch',{"id":eachapp.id});
 			}
 		});
-		whichappbox.appendChild(appitem);
+		return appitem;
 	}
+
+// id -> tile element, for the bar and for the drawer (an app has one tile in each)
+const tilecache={bar:new Map(),drawer:new Map()};
+
+function tilefor(app,inbar){
+	const cache=inbar?tilecache.bar:tilecache.drawer;
+	let tile=cache.get(app.id);
+	if(!tile){
+		tile=maketile(app,inbar);
+		cache.set(app.id,tile);
+	}
+	updatetile(tile,app.id,inbar);
+	return tile;
+}
+
+// bring a kept tile in line with the current settings without recreating anything
+function updatetile(tile,id,inbar){
+	tile.classList.toggle("hiddenapp",ishidden(id));
+	tile.classList.toggle("pinnedapp",!inbar && ispinned(id));
+	tile.classList.toggle("carried",!!carrying && carrying.id===id && carrying.inbar===inbar);
+	setctl(tile.pinbtn,ispinned(id)?"Unpin":"Pin",ispinned(id)?"unpin":"pin");
+	if(tile.hidebtn){ setctl(tile.hidebtn,ishidden(id)?"Show":"Hide",ishidden(id)?"eye":"eyeoff"); }
+}
+
+function setctl(btn,label,icon){
+	if(btn.shownicon===icon){ return; }
+	btn.shownicon=icon;
+	btn.setAttribute("title",label);
+	btn.setAttribute("aria-label",label);
+	btn.innerHTML=iconsvg(icon);
+}
+
+// make box hold exactly these tiles in this order, touching only what changed; the first `skip` children are static
+function placetiles(box,tiles,skip){
+	Array.from(box.children).slice(skip).forEach((child) => {
+		if(tiles.indexOf(child)===-1){ box.removeChild(child); }
+	});
+	tiles.forEach((tile,i) => {
+		const at=box.children[skip+i];
+		if(at!==tile){ box.insertBefore(tile,at||null); }
+	});
+}
+
+function ctlbutton(onclick){
+	const btn=document.createElement("button");
+	btn.addEventListener("click", function(e){
+		e.stopPropagation();
+		onclick();
+	});
+	return btn;
+}
+
+// applist in the user's saved drawer order; apps not in the saved order keep the system order after it
+function orderedapps(){
+	const rank={};
+	settings.order.forEach((id,i) => {rank[id]=i;});
+	const rankof=(app,i) => (app.id in rank)?rank[app.id]:settings.order.length+i;
+	return applist.map((app,i) => ({app,rank:rankof(app,i)})).sort((x,y) => x.rank-y.rank).map((x) => x.app);
+}
+
+function startcarry(id,inbar){
+	carrying={id,inbar,armed:false};
+	maindiv.classList.add("carrying");
+	render();
+}
+
+function stopcarry(){
+	clearTimeout(droptimer);
+	carrying=null;
+	maindiv.classList.remove("carrying");
+	render();
+}
+
+// put the carried app in the position of the app being hovered (in the bar or the drawer, wherever it was picked up)
+function movecarried(targetid){
+	const inbar=carrying.inbar;
+	const ids=inbar?pinnedids().slice():orderedapps().map((app) => app.id);
+	const from=ids.indexOf(carrying.id);
+	const to=ids.indexOf(targetid);
+	if(from===-1 || to===-1 || from===to){ return; }
+	ids.splice(from,1);
+	ids.splice(to,0,carrying.id);
+	if(inbar){ settings.pinned=ids; } else { settings.order=ids; }
+	carrying.armed=true;
+	savesettings();
+	render();
+}
 
 function loadsettings(){
 	try {
@@ -75,6 +188,7 @@ function loadsettings(){
 		if(saved){
 			settings.pinned=Array.isArray(saved.pinned)?saved.pinned:null;
 			settings.hidden=Array.isArray(saved.hidden)?saved.hidden:[];
+			settings.order=Array.isArray(saved.order)?saved.order:[];
 		}
 	} catch(e) {}
 }
@@ -123,6 +237,9 @@ function togglehide(id){
 
 function toggleedit(){
 	editing=!editing;
+	clearTimeout(droptimer);
+	carrying=null;
+	maindiv.classList.remove("carrying");
 	maindiv.classList.toggle("editing",editing);
 	editbtn.innerText=editing?"Done":"Edit";
 	render();
@@ -181,24 +298,23 @@ if (!(turstedapp || rooted )) {
 
 function render() {
 	if(!applist){ return; }
-	appbar.querySelectorAll(".appitem[data-appid]").forEach((el) => el.remove());
-	appluncher.innerHTML="";
 	const byid={};
 	applist.forEach((eachapp) => {byid[eachapp.id]=eachapp;});
-	pinnedids().forEach((eachid) => {
-		if(byid[eachid] && !ishidden(eachid)){ genappdiv(byid[eachid],appbar); }
-	});
-	applist.forEach((eachapp) => {
-		if(editing || !ishidden(eachapp.id)){ genappdiv(eachapp,appluncher); }
-	});
+	const barapps=pinnedids().filter((eachid) => byid[eachid] && !ishidden(eachid)).map((eachid) => byid[eachid]);
+	const drawerapps=orderedapps().filter((eachapp) => editing || !ishidden(eachapp.id));
+	placetiles(appbar,barapps.map((eachapp) => tilefor(eachapp,true)),1);   // the Apps button stays first
+	placetiles(appluncher,drawerapps.map((eachapp) => tilefor(eachapp,false)),0);
 }
 
 let imagewallpapers=false;
-// fallback used when access/wallpaper/loop.mp4 is missing or can't be played
+// last resort when neither the network videos nor access/wallpaper/loop.mp4 can play
 function startimagewallpapers() {
 	if(imagewallpapers){ return; }
 	imagewallpapers=true;
+	bgmode="images";
 	bgvideo.style.display="none";
+	bgvideo.removeAttribute("src");
+	bgvideo.load();
 	const swap=() => {
 		let wallpaperfile=wallpapers[Math.floor(Math.random() * wallpapers.length)];
 		let preload=new Image();
@@ -212,8 +328,88 @@ function startimagewallpapers() {
 	setInterval(swap,20*1000);
 }
 
-function randomstart(video) {
-	if(isFinite(video.duration)){ video.currentTime=Math.random()*video.duration; }
+// Wallpaper source order: network videos (aerials.js) -> local access/wallpaper/loop.mp4 -> still images
+let bgmode="aerials";
+let bgqueue=[];
+let bgcurrent=null;
+let bgerrors=0;
+let bglasttime=-1;
+let applehttp=false;
+const APPLE_HTTPS=/^https:\/\/sylvan\.apple\.com\//;
+
+function loadaerial(url) {
+	bglasttime=-1;
+	bgvideo.loop=false;
+	bgvideo.src=applehttp?url.replace(APPLE_HTTPS,"http://sylvan.apple.com/"):url;
+	bgvideo.play().catch(()=>{});
+}
+
+function nextaerial() {
+	if(bgqueue.length===0){
+		bgqueue=aerials.slice();
+		for(let i=bgqueue.length-1;i>0;i--){
+			const j=Math.floor(Math.random()*(i+1));
+			[bgqueue[i],bgqueue[j]]=[bgqueue[j],bgqueue[i]];
+		}
+	}
+	bgcurrent=bgqueue.pop();
+	loadaerial(bgcurrent);
+}
+
+function startlocalvideo() {
+	bgmode="local";
+	bgvideo.loop=true;
+	bgvideo.src="access/wallpaper/loop.mp4";
+	bgvideo.play().catch(()=>{});
+}
+
+function bgfailed() {
+	if(bgmode==="aerials"){
+		// Apple's certificate chain isn't trusted everywhere, and plain http works for them
+		if(!applehttp && APPLE_HTTPS.test(bgcurrent)){
+			applehttp=true;
+			loadaerial(bgcurrent);
+			return;
+		}
+		if(++bgerrors>=6){
+			startlocalvideo();
+		} else {
+			nextaerial();
+		}
+	} else if(bgmode==="local"){
+		startimagewallpapers();
+	}
+}
+
+function startbackground() {
+	bgvideo.onerror=bgfailed;
+	bgvideo.onplaying=() => {bgerrors=0;};
+	bgvideo.onended=() => {if(bgmode==="aerials"){ nextaerial(); }};
+	bgvideo.onloadedmetadata=() => {
+		if(bgmode==="local" && isFinite(bgvideo.duration)){ bgvideo.currentTime=Math.random()*bgvideo.duration; }
+	};
+	// don't stream or decode while another app is in front
+	document.addEventListener("visibilitychange",() => {
+		if(document.hidden){
+			bgvideo.pause();
+		} else if(bgmode!=="images"){
+			bgvideo.play().catch(()=>{});
+		}
+	});
+	// a stream that stalls or died while the TV slept never fires an error, so skip it if time stops moving
+	setInterval(() => {
+		if(bgmode!=="aerials" || document.hidden || bgvideo.paused){ return; }
+		if(bgvideo.currentTime===bglasttime){
+			nextaerial();
+		} else {
+			bglasttime=bgvideo.currentTime;
+		}
+	},30*1000);
+	if(typeof aerials!=="undefined" && aerials.length){
+		nextaerial();
+	} else {
+		startlocalvideo();
+	}
 }
 
 async function reload() {
@@ -232,6 +428,8 @@ console.log(newapplistraw);
 if (!( JSON.stringify(applist) === JSON.stringify(newapplist) ) ) {
 	applist=newapplist;
 	console.log("reinit");
+tilecache.bar.clear();
+tilecache.drawer.clear();
 render();
 }
 
@@ -262,6 +460,7 @@ render();
 }
 
 document.addEventListener("DOMContentLoaded",inithomescreen);
+document.addEventListener("DOMContentLoaded",startbackground);
 
 document.addEventListener("webOSRelaunch", reload );
 
