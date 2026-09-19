@@ -14,9 +14,10 @@
 <script src="js/main.js"></script>
 
 <body>
-	<!-- Hack : put a black black background behide maindiv so thta appluncher isnt visable when maindiv background break   -->
+	<!-- Wallpaper is a looping video (hardware decoded, unlike CSS background images). Built by scripts/make-wallpaper-video.sh; if it is missing the old image rotation takes over. -->
+	<video id="bgvideo" src="access/wallpaper/loop.mp4" autoplay loop muted playsinline onerror="startimagewallpapers()" onloadedmetadata="randomstart(this)"></video>
 	<div id="prefetchmaindiv">
-	<!-- Hack : make appluncher always loaded so it can be faster when i open/close it -->
+	<!-- Hack : make appluncher always loaded (just hidden) so it can be faster when i open/close it -->
 	<div id="maindiv">
 	<input type="checkbox"  id="realappbarbtu" >
 	<div id="clock">
@@ -24,6 +25,7 @@
 		<p id="clockdate"></p>
 	</div>
 	<div id="appluncher"></div>
+	<button id="editbtn">Edit</button>
 	<div id="appbar">
 
 

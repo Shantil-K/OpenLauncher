@@ -24,12 +24,31 @@ Side note : usually web os on lg tv wont let developer app's trustLevel to be se
 
 # Compile
 
+Optional but recommended: build the wallpaper video first (needs ffmpeg, takes a few minutes).
+The TV decodes video in hardware, which is much smoother than rotating 4K JPEGs on the CPU.
+Without it the app falls back to rotating the images.
+
+```
+$ ./scripts/make-wallpaper-video.sh
+
+```
+
+Video is processed by the TV's picture engine, so it can look grainy in some picture modes.
+Use Game (or Filmmaker) picture mode, or turn off noise reduction / Super Resolution.
+
 Run the following command to build it :
 
 ```
 $ ares-package src
 
 ```
+
+# Pinning and hiding apps
+
+Open the app drawer and press **Edit** (bottom right). Each app then shows **Pin/Unpin**
+(bar at the bottom) and **Hide/Show** (drawer). Hidden apps stay dimmed while editing and
+disappear when you press **Done**. Settings are stored in the app's localStorage and are
+kept between launches.
 # Auto-start
 
 Run below command on the TV to make it auto start by making it as input :

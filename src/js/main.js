@@ -1,8 +1,11 @@
 //SPDX-License-Identifier: WTFNMFPL
 
-let inited=false;
 let applist;
-let appbardefu;
+let editing=false;
+const SETTINGS_KEY='openlauncher.settings';
+// used until the user pins/unpins something for the first time
+const DEFAULT_PINNED=["com.webos.app.livetv","com.webos.app.hdmi1","com.webos.app.hdmi2","com.webos.app.hdmi3","com.webos.app.hdmi4","com.webos.app.mediadiscovery","com.famobi.ctr","com.halfbrick.fruitninja","com.github.k4zmu2a.space-cadet-pinball"];
+let settings={pinned:null,hidden:[]};
 	  let noappperm=true;
 	  let turstedapp=false,rooted=false;
 let appid='com.homebrew.openlauncher'
@@ -31,27 +34,99 @@ appicon.src="/access/fallback.png";
 		});
 		appname.innerText=eachapp.title;
 		appname.setAttribute("class","appname");
-		appitem.setAttribute("class","appitem");
+		appitem.setAttribute("class",ishidden(eachapp.id)?"appitem hiddenapp":"appitem");
 		appitem.setAttribute("data-appid",eachapp.id);
 		appitem.appendChild(appicon);
 		appitem.appendChild(appname);
-		appitem.addEventListener("click", function(e){
-			let clickelm;
-			if (e.target.getAttribute("data-appid")==null){
-				clickelm=e.target.parentElement.getAttribute("data-appid");
-		} else {
-				clickelm=e.target.getAttribute("data-appid");
+		const appctl=document.createElement("div");
+		appctl.setAttribute("class","appctl");
+		const pinbtn=document.createElement("button");
+		pinbtn.innerText=ispinned(eachapp.id)?"Unpin":"Pin";
+		pinbtn.addEventListener("click", function(e){
+			e.stopPropagation();
+			togglepin(eachapp.id);
+		});
+		appctl.appendChild(pinbtn);
+		if(whichappbox!==appbar){
+			const hidebtn=document.createElement("button");
+			hidebtn.innerText=ishidden(eachapp.id)?"Show":"Hide";
+			hidebtn.addEventListener("click", function(e){
+				e.stopPropagation();
+				togglehide(eachapp.id);
+			});
+			appctl.appendChild(hidebtn);
+		}
+		appitem.appendChild(appctl);
 
-			}
+		appitem.addEventListener("click", function(){
+			if(editing){ return; }
 			if(rooted){
-		lunacallasroot('luna://com.webos.service.applicationManager/launch',{"id":clickelm});
+				lunacallasroot('luna://com.webos.service.applicationManager/launch',{"id":eachapp.id});
 			} else {
-		lunacall('luna://com.webos.service.applicationManager/launch',{"id":clickelm});
+				lunacall('luna://com.webos.service.applicationManager/launch',{"id":eachapp.id});
 			}
-console.log(clickelm);
-		}); 
+		});
 		whichappbox.appendChild(appitem);
 	}
+
+function loadsettings(){
+	try {
+		const saved=JSON.parse(localStorage.getItem(SETTINGS_KEY));
+		if(saved){
+			settings.pinned=Array.isArray(saved.pinned)?saved.pinned:null;
+			settings.hidden=Array.isArray(saved.hidden)?saved.hidden:[];
+		}
+	} catch(e) {}
+}
+
+function savesettings(){
+	try {
+		localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));
+	} catch(e) {}
+}
+
+function pinnedids(){
+	return settings.pinned===null?DEFAULT_PINNED:settings.pinned;
+}
+
+function ispinned(id){
+	return pinnedids().indexOf(id)!==-1;
+}
+
+function ishidden(id){
+	return settings.hidden.indexOf(id)!==-1;
+}
+
+function togglepin(id){
+	const pinned=pinnedids().slice();
+	const at=pinned.indexOf(id);
+	if(at===-1){
+		pinned.push(id);
+	} else {
+		pinned.splice(at,1);
+	}
+	settings.pinned=pinned;
+	savesettings();
+	render();
+}
+
+function togglehide(id){
+	const at=settings.hidden.indexOf(id);
+	if(at===-1){
+		settings.hidden.push(id);
+	} else {
+		settings.hidden.splice(at,1);
+	}
+	savesettings();
+	render();
+}
+
+function toggleedit(){
+	editing=!editing;
+	maindiv.classList.toggle("editing",editing);
+	editbtn.innerText=editing?"Done":"Edit";
+	render();
+}
 
 function addzero (l){
 
@@ -78,7 +153,7 @@ var rootcheck=await lunacall('luna://org.webosbrew.hbchannel.service/getConfigur
 		rooted=false;
 	}
 
-if (noappperm && rooted && (!(inited))){
+if (noappperm && rooted){
 await iconhack(appdir);
 }
 
@@ -104,26 +179,42 @@ if (!(turstedapp || rooted )) {
 }
 }
 
-function appluncherinit() {
-console.log(applist);
-//barlist=["com.webos.app.camera","com.palm.app.settings"];
-barlist=["com.webos.app.livetv","com.webos.app.hdmi1","com.webos.app.hdmi2","com.webos.app.hdmi3","com.webos.app.hdmi4","com.webos.app.mediadiscovery","com.famobi.ctr","com.halfbrick.fruitninja","com.github.k4zmu2a.space-cadet-pinball",];
-if (inited){
-
+function render() {
+	if(!applist){ return; }
+	appbar.querySelectorAll(".appitem[data-appid]").forEach((el) => el.remove());
 	appluncher.innerHTML="";
-} else {
-
-barlist.forEach(((eachid) => {
-
-	applist.some((eachapp) => {if ( eachapp.id === eachid) {genappdiv(eachapp,appbar)}} );
-}));
-
-
+	const byid={};
+	applist.forEach((eachapp) => {byid[eachapp.id]=eachapp;});
+	pinnedids().forEach((eachid) => {
+		if(byid[eachid] && !ishidden(eachid)){ genappdiv(byid[eachid],appbar); }
+	});
+	applist.forEach((eachapp) => {
+		if(editing || !ishidden(eachapp.id)){ genappdiv(eachapp,appluncher); }
+	});
 }
-		applist.forEach(((echap) => genappdiv(echap,appluncher)));
-	inited=true;
 
-};
+let imagewallpapers=false;
+// fallback used when access/wallpaper/loop.mp4 is missing or can't be played
+function startimagewallpapers() {
+	if(imagewallpapers){ return; }
+	imagewallpapers=true;
+	bgvideo.style.display="none";
+	const swap=() => {
+		let wallpaperfile=wallpapers[Math.floor(Math.random() * wallpapers.length)];
+		let preload=new Image();
+		preload.src='access/wallpaper/'+wallpaperfile;
+		//force the decode to happen now, off the swap, so the swap itself is a cheap composite instead of a stall.
+		preload.decode().catch(()=>{}).then(() => {
+			maindiv.style='background: no-repeat center / 100% url(access/wallpaper/'+wallpaperfile+') !important;';
+		});
+	};
+	swap();
+	setInterval(swap,20*1000);
+}
+
+function randomstart(video) {
+	if(isFinite(video.duration)){ video.currentTime=Math.random()*video.duration; }
+}
 
 async function reload() {
 
@@ -141,7 +232,7 @@ console.log(newapplistraw);
 if (!( JSON.stringify(applist) === JSON.stringify(newapplist) ) ) {
 	applist=newapplist;
 	console.log("reinit");
-appluncherinit();
+render();
 }
 
 }
@@ -156,15 +247,6 @@ await initpermcheck();
 
     }, 1000);
 
-	 setInterval(() => {
-let wallpaperfile=wallpapers[Math.floor(Math.random() * wallpapers.length)];
-let preload=new Image();
-preload.src='access/wallpaper/'+wallpaperfile;
-//force the decode to happen now, off the swap, so the swap itself is a cheap composite instead of a stall.
-preload.decode().catch(()=>{}).then(() => {
-maindiv.style='background: no-repeat center / 100% url(access/wallpaper/'+wallpaperfile+') !important;';
-});
-    }, 20 * 1000);
 //back button
 window.addEventListener("keydown", function(inEvent){
 	if (inEvent.keyCode === 461) {
@@ -173,7 +255,9 @@ window.addEventListener("keydown", function(inEvent){
 });
 
 
-appluncherinit();
+loadsettings();
+editbtn.addEventListener("click",toggleedit);
+render();
 
 }
 
