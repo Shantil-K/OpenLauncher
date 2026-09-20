@@ -86,14 +86,18 @@ appicon.src="/access/fallback.png";
 
 		appitem.addEventListener("click", function(){
 			if(editing){ return; }
-			if(rooted){
-				lunacallasroot('luna://com.webos.service.applicationManager/launch',{"id":eachapp.id});
-			} else {
-				lunacall('luna://com.webos.service.applicationManager/launch',{"id":eachapp.id});
-			}
+			launchapp(eachapp.id);
 		});
 		return appitem;
 	}
+
+function launchapp(id){
+	if(rooted){
+		lunacallasroot('luna://com.webos.service.applicationManager/launch',{"id":id});
+	} else {
+		lunacall('luna://com.webos.service.applicationManager/launch',{"id":id});
+	}
+}
 
 // id -> tile element, for the bar and for the drawer (an app has one tile in each)
 const tilecache={bar:new Map(),drawer:new Map()};
@@ -245,19 +249,6 @@ function toggleedit(){
 	render();
 }
 
-function addzero (l){
-
-
-if (l <= 9){
-			return ('0'+l);
-
-		} else {
-
-			return (l);
-		}
-
-}
-
 async function initpermcheck(){
 
 var permtest=await lunacall('luna://com.webos.applicationManager/listApps',{});
@@ -307,6 +298,8 @@ function render() {
 }
 
 let imagewallpapers=false;
+let imagetimer=null;
+let imageswap=null;
 // last resort when neither the network videos nor access/wallpaper/loop.mp4 can play
 function startimagewallpapers() {
 	if(imagewallpapers){ return; }
@@ -315,7 +308,7 @@ function startimagewallpapers() {
 	bgvideo.style.display="none";
 	bgvideo.removeAttribute("src");
 	bgvideo.load();
-	const swap=() => {
+	imageswap=() => {
 		let wallpaperfile=wallpapers[Math.floor(Math.random() * wallpapers.length)];
 		let preload=new Image();
 		preload.src='access/wallpaper/'+wallpaperfile;
@@ -324,23 +317,38 @@ function startimagewallpapers() {
 			maindiv.style='background: no-repeat center / 100% url(access/wallpaper/'+wallpaperfile+') !important;';
 		});
 	};
-	swap();
-	setInterval(swap,20*1000);
+	imageswap();
+	imagetimer=setInterval(imageswap,20*1000);
 }
 
-// Wallpaper source order: network videos (aerials.js) -> local access/wallpaper/loop.mp4 -> still images
+// leave the image fallback so a video can play again (used when the video source is switched in settings)
+function stopimagewallpapers() {
+	if(!imagewallpapers){ return; }
+	imagewallpapers=false;
+	clearInterval(imagetimer);
+	imagetimer=null;
+	maindiv.style="";
+	bgvideo.style.display="";
+}
+
+// Wallpaper source order: network videos (aerials.js) -> local access/wallpaper/loop.mp4 -> still images.
+// The "Video source" setting can start at the local video instead of the network ones.
 let bgmode="aerials";
+let bgstarted=false;
+let lastsource=null;
 let bgqueue=[];
 let bgcurrent=null;
 let bgerrors=0;
 let bglasttime=-1;
 let applehttp=false;
 const APPLE_HTTPS=/^https:\/\/sylvan\.apple\.com\//;
+// access/wallpaper/loop.mp4 is one still per wallpaper, this many seconds each (SECS in scripts/make-wallpaper-video.sh)
+const LOCAL_SEGMENT_SECONDS=20;
 
-function loadaerial(url) {
+function loadaerial(entry) {
 	bglasttime=-1;
 	bgvideo.loop=false;
-	bgvideo.src=applehttp?url.replace(APPLE_HTTPS,"http://sylvan.apple.com/"):url;
+	bgvideo.src=applehttp?entry.u.replace(APPLE_HTTPS,"http://sylvan.apple.com/"):entry.u;
 	bgvideo.play().catch(()=>{});
 }
 
@@ -356,17 +364,59 @@ function nextaerial() {
 	loadaerial(bgcurrent);
 }
 
+function startaerials() {
+	stopimagewallpapers();
+	bgmode="aerials";
+	bgerrors=0;
+	nextaerial();
+}
+
 function startlocalvideo() {
+	stopimagewallpapers();
 	bgmode="local";
 	bgvideo.loop=true;
 	bgvideo.src="access/wallpaper/loop.mp4";
 	bgvideo.play().catch(()=>{});
 }
 
+// react to the "Video source" setting (called by applyprefs); only acts when that setting actually changed
+function applybackgroundsource() {
+	if(!bgstarted || prefs.videoSource===lastsource){ return; }
+	lastsource=prefs.videoSource;
+	if(prefs.videoSource==="offline"){
+		startlocalvideo();
+	} else if(typeof aerials!=="undefined" && aerials.length){
+		startaerials();
+	}
+}
+
+// what the info card shows
+function nowplaying() {
+	if(bgmode==="aerials" && bgcurrent){
+		return {name:bgcurrent.n,source:bgcurrent.s+", streamed",video:true};
+	}
+	if(bgmode==="local"){
+		return {name:"Built-in wallpaper loop",source:"Offline (built into the launcher)",video:true};
+	}
+	return {name:"Rotating pictures",source:"Offline (built into the launcher)",video:false};
+}
+
+function skipvideo() {
+	if(bgmode==="aerials"){
+		nextaerial();
+	} else if(bgmode==="local" && isFinite(bgvideo.duration)){
+		// the local loop is one wallpaper after another, so "the next video" is the next wallpaper
+		const next=(Math.floor(bgvideo.currentTime/LOCAL_SEGMENT_SECONDS)+1)*LOCAL_SEGMENT_SECONDS;
+		bgvideo.currentTime=next<bgvideo.duration?next:0;
+	} else if(bgmode==="images" && imageswap){
+		imageswap();
+	}
+}
+
 function bgfailed() {
 	if(bgmode==="aerials"){
 		// Apple's certificate chain isn't trusted everywhere, and plain http works for them
-		if(!applehttp && APPLE_HTTPS.test(bgcurrent)){
+		if(!applehttp && APPLE_HTTPS.test(bgcurrent.u)){
 			applehttp=true;
 			loadaerial(bgcurrent);
 			return;
@@ -405,7 +455,9 @@ function startbackground() {
 			bglasttime=bgvideo.currentTime;
 		}
 	},30*1000);
-	if(typeof aerials!=="undefined" && aerials.length){
+	bgstarted=true;
+	lastsource=prefs.videoSource;
+	if(prefs.videoSource!=="offline" && typeof aerials!=="undefined" && aerials.length){
 		nextaerial();
 	} else {
 		startlocalvideo();
@@ -436,19 +488,16 @@ render();
 }
 async function inithomescreen() {
 await initpermcheck();
-	 setInterval(() => {
-
-	let now=new Date();
-
-	clocktime.innerText=addzero(now.getHours())+':'+addzero(now.getMinutes())+':'+ addzero(now.getSeconds());
-	clockdate.innerText=now.getFullYear()+'/'+addzero(now.getMonth()+1)+'/'+addzero(now.getDate()) ;
-
-    }, 1000);
-
 //back button
 window.addEventListener("keydown", function(inEvent){
 	if (inEvent.keyCode === 461) {
-		realappbarbtu.click();
+		if(settingsisopen()){
+			closesettings();
+		} else if(infoisopen()){
+			closeinfo();
+		} else {
+			realappbarbtu.click();
+		}
 	}
 });
 

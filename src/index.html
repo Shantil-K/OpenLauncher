@@ -4,6 +4,7 @@
 <html>
 
 <head>
+	<meta charset="utf-8">
 	<title>OpenLauncher</title>
 </head>
 
@@ -13,6 +14,9 @@
 <script src="js/aerials.js"></script>
 <script src="js/icons.js"></script>
 	<script src="js/lib/QwQwebosTV.js/main.js"></script>  
+<script src="js/clock.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/info.js"></script>
 <script src="js/main.js"></script>
 
 <body>
@@ -22,12 +26,48 @@
 	<!-- Hack : make appluncher always loaded (just hidden) so it can be faster when i open/close it -->
 	<div id="maindiv">
 	<input type="checkbox"  id="realappbarbtu" >
-	<div id="clock">
-		<p id="clocktime"></p>
-		<p id="clockdate"></p>
+	<!-- clock and date are full-screen layers placed by settings.js; the date sits in #clockstack (under the clock) or moves to #datelayer -->
+	<div id="clock" class="layer" data-v="center" data-h="center">
+		<div id="clockstack" class="clockstyle-digital">
+			<div id="clocktime"><span id="clockh"></span><span class="sep">:</span><span id="clockm"></span><span class="sep sepsec">:</span><span id="clocktail"><span id="clocks"></span><span id="clockap"></span></span></div>
+			<svg id="clockanalog" viewBox="0 0 200 200">
+				<circle class="face" cx="100" cy="100" r="97"></circle>
+				<g id="clockticks"></g>
+				<g id="clocknums"></g>
+				<line id="clockhh" class="hand" x1="100" y1="100" x2="100" y2="56"></line>
+				<line id="clockhm" class="hand" x1="100" y1="100" x2="100" y2="30"></line>
+				<line id="clockhs" class="hand" x1="100" y1="112" x2="100" y2="22"></line>
+				<circle class="hub" cx="100" cy="100" r="5"></circle>
+			</svg>
+			<p id="clockdate"></p>
+		</div>
 	</div>
+	<div id="datelayer" class="layer" data-v="center" data-h="center"></div>
 	<div id="appluncher"></div>
-	<button id="editbtn">Edit</button>
+	<div id="drawertools">
+		<button id="settingsbtn" title="Settings" aria-label="Settings"><img src="access/gear.svg" alt=""></button>
+		<button id="editbtn">Edit</button>
+	</div>
+	<!-- info about the wallpaper video: the button shows on the home screen, the card opens from it -->
+	<button id="infobtn" title="About this wallpaper" aria-label="About this wallpaper"></button>
+	<div id="infocard">
+		<div id="infohead"><span>Now playing</span><button id="infoclose">Close</button></div>
+		<div id="infoname"></div>
+		<div id="infosource"></div>
+		<div id="infoseekrow">
+			<input type="range" id="infoseekbar" min="0" max="1000" value="0" step="1">
+			<span id="infotime">0:00 / 0:00</span>
+		</div>
+		<div id="infoactions"><button id="infoskip"></button></div>
+	</div>
+	<div id="settingsbackdrop"></div>
+	<div id="settingspanel">
+		<div id="settingshead"><span>Settings</span><button id="settingsclose">Close</button></div>
+		<div id="settingsbody">
+			<div id="settingstabs"></div>
+			<div id="settingspane"></div>
+		</div>
+	</div>
 	<div id="carryhint">Hover another app to move it there. Rest on it to drop.</div>
 	<div id="appbar">
 

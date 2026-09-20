@@ -60,23 +60,43 @@ Streaming uses roughly 6 Mbps (about 2.7 GB per hour) while the launcher is on s
 pauses while another app is in front. Dead links are skipped, and after 6 failures in a row it
 falls back to the local video.
 
+The **info button** (bottom right of the home screen) opens a "Now playing" card with the video's name and source,
+a seekbar you can drag to jump around, and **Skip video**. With the built-in loop, Skip jumps to the next wallpaper.
+Back closes the card.
+
+In **Settings > Wallpaper** you can switch the **Video source** to *Offline (built in)* to stop streaming and play only the
+local `loop.mp4`, or back to *Online (streamed)*.
+
 To refresh the aerial list:
 
 ```
 $ cd NetworkVideo
 $ python3 main.py       # downloads the list and writes aerials.m3u
-$ python3 make_js.py    # converts it to src/js/aerials.js
+$ python3 make_js.py    # converts it to src/js/aerials.js (name, source and url of every video)
 ```
+
+# Settings
+
+Open the app drawer and press the gear next to **Edit**. Back closes it. Settings are saved and kept between launches.
+
+- **Clock**: digital, stacked, analog, analog minimal or off; seconds on/off; 12/24-hour; and where on screen it goes (3x3 grid).
+- **Date**: format (`YYYY/MM/DD`, `DD/MM/YYYY`, `DD Month YYYY`, ...), an optional day of week before or after the date, and where it goes (under the clock or anywhere on screen). Turn Date and Day of week both off to hide it.
+- **Apps**: size of the bottom bar and of the app menu, names under the apps and their size (bar and menu separately; the size only shows while names are on), and the colour used when hovering an app.
+- **Wallpaper**: where the wallpaper video comes from (streamed online or built in).
+- **TV**: opens the TV's own settings (`com.palm.app.settings`), and resets the launcher settings to their defaults.
+
+To add a setting, add an item to `SETTINGS_SCHEMA` in `src/js/settings.js` (the panel, defaults and saving are generated from it),
+then make `applyprefs()` do something with its `key`. The comment at the top of that file lists the item types.
 
 # Pinning, hiding and reordering apps
 
 Open the app drawer and press **Edit** (bottom right). While editing, launching is off and
 hovering an app shows its controls over it:
 
-- **Pin icon / slashed pin**: put the app on the bottom bar, or take it off (pinned apps have a pink ring in the drawer).
+- **Pin icon / slashed pin**: put the app on the bottom bar, or take it off (pinned apps have a ring in the hover colour in the drawer).
 - **Crossed-out eye / open eye**: hide the app, or show it again. Hidden apps are dimmed while editing and disappear when you press **Done**.
 - **Reorder icon (two arrows)**: hover-only, no clicking. Rest the pointer on it for a little under a second (it fills
-  pink) to pick the app up. Then just move the pointer over other apps in the same drawer or bar and the app takes
+  with the hover colour) to pick the app up. Then just move the pointer over other apps in the same drawer or bar and the app takes
   their place, following the pointer. Rest on it for a moment to drop it.
 
 Everything is saved in the app's localStorage and kept between launches.

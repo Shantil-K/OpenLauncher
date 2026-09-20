@@ -7,12 +7,30 @@
     src: url(../access/plusjakartasans-bold.woff2)
 }
 
+:root {
+    /* set from settings.js */
+    --accent: 255,150,255;
+    --bartile: 5vw;
+    --menutile: 5vw;
+    --barh: 15vh;
+    --barrow: 2;
+    --menurow: 2;
+    --barname: 1.5vh;
+    --menuname: 1.5vh;
+}
+
 #appluncher,#appbar {
-    grid-template-columns: repeat(auto-fill, 5vw);
-    grid-template-rows: repeat(auto-fill, 10vw);
     display: grid;
     justify-content: center;
     align-items: center;
+}
+#appbar {
+    grid-template-columns: repeat(auto-fill, var(--bartile));
+    grid-template-rows: repeat(auto-fill, calc(var(--bartile) * var(--barrow)));
+}
+#appluncher {
+    grid-template-columns: repeat(auto-fill, var(--menutile));
+    grid-template-rows: repeat(auto-fill, calc(var(--menutile) * var(--menurow)));
 }
 #realappbarbtu {
     display: none;
@@ -26,7 +44,7 @@
 	top: 1vh;
     left: 1vw;
     width: calc(100vw - 2vw);
-        height: 85vh;
+        height: calc(100vh - var(--barh));
 	    scrollbar-width: none;
 }
 
@@ -36,21 +54,12 @@
 
 #appbar .appname {
     text-shadow: 0 1px 4px rgba(0,0,0,0.85);
+    font-size: var(--barname);
+    height: calc(var(--barname) * 1.3333);
 }
-
-#clock p {
-    padding: 0px;
-    margin: 0px;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.75);
-}
-
-
-#clockdate {
-    font-size: 2vh;
-}
-
-#clocktime {
-    font-size: 10vh;
+#appluncher .appname {
+    font-size: var(--menuname);
+    height: calc(var(--menuname) * 1.3333);
 }
 
 #appbar {
@@ -60,7 +69,7 @@
     /* same box as #appluncher so the bar's columns line up with the drawer's */
     left: 1vw;
     width: calc(100vw - 2vw);
-        height: 15vh;
+        height: var(--barh);
 }
 
 .appicon {
@@ -84,6 +93,8 @@ body,#maindiv,#prefetchmaindiv {
 }
 html,body {
 	background-color: rgb(0,0,0);
+	/* the launcher is one screen; only the app drawer scrolls. A scrollable page would shift the bottom-right buttons. */
+	overflow: hidden;
 }
 #bgvideo {
 	position: absolute;
@@ -105,22 +116,7 @@ html,body {
         color: rgb(255, 255, 255);
 }
 
-#clock {
-    position: relative;
-    z-index: 1;
-    pointer-events: none;
-    width: 100%;
-    text-align: center;
-    margin: 0px;
-    color: rgb(255, 255, 255);
-    height: 100%;
-    align-items: center;
-    justify-content: center;
-    display: flex;
-    flex-direction: column;
-}
-
-.appitem:hover { background-color: rgba(255, 150, 255, 0.5); }
+.appitem:hover { background-color: rgba(var(--accent), 0.5); }
 
 #realappbarbtu:not(:checked) ~ #appluncher {
 /* Hack : make appluncher always loaded so it can be faster when i open/close it */
@@ -133,12 +129,17 @@ z-index:9999;
 
 }
 
-#editbtn {
+#drawertools {
 	display: none;
-	position: absolute;
+	position: fixed;
 	bottom: 4vh;
 	right: 2vw;
 	z-index: 10000;
+	align-items: stretch;
+	gap: 1vw;
+}
+#realappbarbtu:checked ~ #drawertools { display: flex; }
+#editbtn, #settingsbtn {
 	font-family: inherit;
 	font-size: 2vh;
 	padding: 0.6vh 1.6vw;
@@ -147,8 +148,9 @@ z-index:9999;
 	border: 2px solid rgb(255,255,255);
 	border-radius: 6px;
 }
-#editbtn:hover { background-color: rgba(255,150,255,0.5); }
-#realappbarbtu:checked ~ #editbtn { display: block; }
+#settingsbtn { padding: 0.6vh 0.9vw; display: flex; align-items: center; }
+#settingsbtn img { height: 3.4vh; width: 3.4vh; display: block; }
+#editbtn:hover, #settingsbtn:hover { background-color: rgba(var(--accent), 0.5); }
 
 /* edit mode: hovering a tile covers it with its controls */
 .appctl {
@@ -175,7 +177,7 @@ z-index:9999;
 	border-radius: 4px;
 }
 .appctl button.wide { grid-column: 1 / -1; }
-.appctl button:hover { background-color: rgba(255,150,255,0.7); }
+.appctl button:hover { background-color: rgba(var(--accent), 0.7); }
 /* rest the pointer here to pick the app up: the pink fill is the countdown (keep the .875s in step with PICKUP_MS) */
 .movezone {
 	grid-column: 1 / -1;
@@ -202,7 +204,7 @@ z-index:9999;
 	left: 0;
 	right: 0;
 	bottom: 0;
-	background-color: rgba(255,150,255,0.75);
+	background-color: rgba(var(--accent), 0.75);
 	transform: scaleX(0);
 	transform-origin: left;
 	transition: transform 0.875s linear;
@@ -211,10 +213,10 @@ z-index:9999;
 .movezone span { position: relative; display: block; }
 /* while carrying, tiles show no controls; the carried one is ringed */
 #maindiv.carrying .appitem:hover .appctl { display: none; }
-#maindiv.carrying .carried { box-shadow: inset 0 0 0 3px rgb(255,150,255); background-color: rgba(255,150,255,0.35); }
+#maindiv.carrying .carried { box-shadow: inset 0 0 0 3px rgb(var(--accent)); background-color: rgba(var(--accent), 0.35); }
 #carryhint {
 	display: none;
-	position: absolute;
+	position: fixed;
 	top: 2vh;
 	left: 50%;
 	transform: translateX(-50%);
@@ -223,11 +225,239 @@ z-index:9999;
 	font-size: 2vh;
 	color: rgb(255,255,255);
 	background-color: rgba(0,0,0,0.75);
-	border: 2px solid rgb(255,150,255);
+	border: 2px solid rgb(var(--accent));
 	border-radius: 6px;
 	pointer-events: none;
 }
 #maindiv.carrying #carryhint { display: block; }
 .hiddenapp .appicon, .hiddenapp .appname { opacity: 0.35; }
 /* edit mode: ring around pinned apps in the drawer */
-#maindiv.editing .pinnedapp { box-shadow: inset 0 0 0 2px rgba(255,150,255,0.8); }
+#maindiv.editing .pinnedapp { box-shadow: inset 0 0 0 2px rgba(var(--accent), 0.8); }
+
+/* names under the apps can be turned off in settings */
+#maindiv.hide-bar-names #appbar .appname { display: none; }
+#maindiv.hide-menu-names #appluncher .appname { display: none; }
+/* with the name gone a tile is just its icon: equal padding all round and no line gap under the image, so the hover box is a square */
+#maindiv.hide-bar-names #appbar .appitem { padding-bottom: 10px; }
+#maindiv.hide-bar-names #appbar .appicon,
+#maindiv.hide-menu-names #appluncher .appicon { display: block; }
+
+/* clock and date: full-screen layers, placed with data-v (top|center|bottom) and data-h (left|center|right) */
+.layer {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	box-sizing: border-box;
+	padding: 3vh 3vw;
+	display: flex;
+	flex-direction: column;
+	z-index: 1;
+	pointer-events: none;
+	color: rgb(255,255,255);
+}
+.layer[data-v="top"] { justify-content: flex-start; }
+.layer[data-v="center"] { justify-content: center; }
+.layer[data-v="bottom"] { justify-content: flex-end; padding-bottom: calc(var(--barh) + 2vh); }
+.layer[data-h="left"] { align-items: flex-start; text-align: left; }
+.layer[data-h="center"] { align-items: center; text-align: center; }
+.layer[data-h="right"] { align-items: flex-end; text-align: right; }
+
+#clockstack { display: flex; flex-direction: column; align-items: inherit; }
+#clocktime, #clockdate {
+	margin: 0;
+	padding: 0;
+	text-shadow: 0 2px 8px rgba(0,0,0,0.75);
+	/* every digit the same width, so the clock doesn't shift when the numbers change */
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+#clocktime { font-size: 10vh; }
+#clockdate { font-size: 2vh; }
+#clockap { font-size: 0.3em; margin-left: 0.3em; }
+
+.clockstyle-off #clocktime,
+.clockstyle-analog #clocktime,
+.clockstyle-analogmin #clocktime { display: none; }
+.noseconds #clocktime #clocktail #clocks, .noseconds #clocktime .sepsec { display: none; }
+
+/* stacked: hours, minutes and (smaller) seconds on their own lines */
+.clockstyle-stacked #clocktime { font-size: 13vh; line-height: 0.95; }
+.clockstyle-stacked #clocktime span { display: block; }
+.clockstyle-stacked #clocktime .sep { display: none; }
+/* seconds and AM/PM share the last, smaller line ("09 PM"); with seconds off AM/PM is alone on it */
+.clockstyle-stacked #clocktime #clocktail { display: block; font-size: 0.4em; }
+.clockstyle-stacked #clocktime #clocktail span { display: inline; }
+.clockstyle-stacked #clocktime #clockap { font-size: 0.8em; margin-left: 0.3em; }
+.clockstyle-stacked.noseconds #clocktime #clockap { margin-left: 0; }
+
+/* analog */
+#clockanalog { display: none; width: 30vh; height: 30vh; }
+.clockstyle-analog #clockanalog, .clockstyle-analogmin #clockanalog { display: block; }
+#clockanalog .face { fill: rgba(0,0,0,0.35); stroke: rgba(255,255,255,0.9); stroke-width: 3; }
+#clockanalog .tick { stroke: rgb(255,255,255); stroke-width: 2; }
+#clockanalog .tick.hour { stroke-width: 4; }
+#clockanalog text { fill: rgb(255,255,255); font-family: inherit; font-size: 17px; text-anchor: middle; dominant-baseline: central; }
+#clockanalog .hand { stroke: rgb(255,255,255); stroke-linecap: round; }
+#clockhh { stroke-width: 7; }
+#clockhm { stroke-width: 4; }
+#clockanalog #clockhs { stroke: rgb(var(--accent)); stroke-width: 2; }
+#clockanalog .hub { fill: rgb(var(--accent)); }
+.clockstyle-analogmin #clocknums, .clockstyle-analogmin .tick.minor { display: none; }
+.clockstyle-analogmin #clockhh { stroke-width: 4; }
+.clockstyle-analogmin #clockhm { stroke-width: 2.5; }
+.noseconds #clockhs { display: none; }
+
+/* settings panel */
+#settingsbackdrop {
+	display: none;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	z-index: 20000;
+	background-color: rgba(0,0,0,0.55);
+}
+#settingspanel {
+	display: none;
+	position: fixed;
+	top: 10vh;
+	left: 14vw;
+	width: 72vw;
+	height: 80vh;
+	z-index: 20001;
+	flex-direction: column;
+	overflow: hidden;
+	color: rgb(255,255,255);
+	background-color: rgba(18,18,24,0.97);
+	border: 2px solid rgba(var(--accent), 0.85);
+	border-radius: 1.6vh;
+}
+#maindiv.settingsopen #settingsbackdrop { display: block; }
+#maindiv.settingsopen #settingspanel { display: flex; }
+#settingshead {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 2vh 2vw;
+	font-size: 3.4vh;
+	border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+#settingsclose, .sopt, .stab, .poscell, .swatch {
+	font-family: inherit;
+	color: rgb(255,255,255);
+	background-color: rgba(255,255,255,0.1);
+	border: 1px solid rgba(255,255,255,0.4);
+}
+#settingsclose { font-size: 2vh; padding: 0.8vh 1.6vw; border-radius: 0.8vh; }
+#settingsbody { display: flex; flex: 1; min-height: 0; }
+#settingstabs {
+	display: flex;
+	flex-direction: column;
+	gap: 1vh;
+	width: 16vw;
+	padding: 2vh 1.2vw;
+	border-right: 1px solid rgba(255,255,255,0.2);
+}
+.stab { font-size: 2.4vh; padding: 1.4vh 1vw; text-align: left; border-radius: 0.8vh; }
+.stab.on, .sopt.on { color: rgb(0,0,0); background-color: rgb(var(--accent)); border-color: rgb(var(--accent)); }
+#settingspane { flex: 1; overflow-y: auto; padding: 1vh 2vw; scrollbar-width: none; }
+.srow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 2vw;
+	padding: 1.6vh 0;
+	border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.slabel { flex: 0 0 12vw; }
+.slabeltext { display: block; font-size: 2.4vh; }
+.shint { display: block; margin-top: 0.4vh; font-size: 1.5vh; opacity: 0.65; }
+.scontrol { flex: 1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.8vh 0.6vw; }
+.sopt { font-size: 2vh; padding: 1vh 1.2vw; border-radius: 0.8vh; }
+.swatch { width: 4.4vh; height: 4.4vh; padding: 0; border-radius: 50%; border: 3px solid rgba(255,255,255,0.35); }
+.swatch.on { border-color: rgb(255,255,255); box-shadow: 0 0 0 3px rgb(0,0,0), 0 0 0 5px rgb(255,255,255); }
+.pospicker { display: flex; align-items: center; gap: 1.2vw; }
+.posgrid { display: grid; grid-template-columns: repeat(3, 4.2vh); grid-template-rows: repeat(3, 3vh); gap: 0.6vh; padding: 0.8vh; background-color: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.4); border-radius: 0.8vh; }
+.poscell { padding: 0; border-radius: 0.5vh; }
+.poscell.on { background-color: rgb(var(--accent)); border-color: rgb(var(--accent)); }
+#settingsclose:hover, .sopt:hover, .stab:hover, .poscell:hover, .swatch:hover { background-color: rgba(var(--accent), 0.45); }
+.stab.on:hover, .sopt.on:hover, .poscell.on:hover { background-color: rgb(var(--accent)); }
+.sconfirm { align-self: center; margin-right: 0.6vw; font-size: 2.2vh; }
+.sopt.danger { background-color: rgba(255,90,90,0.35); border-color: rgb(255,90,90); }
+.sopt.danger:hover { background-color: rgb(255,90,90); color: rgb(0,0,0); }
+
+/* info button (home screen only) and the "Now playing" card */
+#infobtn {
+	position: fixed;
+	bottom: 4vh;
+	right: 2vw;
+	z-index: 10000;
+	width: 5.6vh;
+	height: 5.6vh;
+	padding: 0.7vh;
+	box-sizing: border-box;
+	color: rgba(255,255,255,0.9);
+	background-color: rgba(0,0,0,0.45);
+	border: 2px solid rgba(255,255,255,0.7);
+	border-radius: 50%;
+}
+#infobtn svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+#infobtn:hover { background-color: rgba(var(--accent), 0.6); }
+#realappbarbtu:checked ~ #infobtn { display: none; }
+
+#infocard {
+	display: none;
+	position: fixed;
+	bottom: 12vh;
+	right: 2vw;
+	width: 32vw;
+	box-sizing: border-box;
+	padding: 2vh 1.6vw;
+	z-index: 10000;
+	color: rgb(255,255,255);
+	background-color: rgba(18,18,24,0.94);
+	border: 2px solid rgba(var(--accent), 0.85);
+	border-radius: 1.6vh;
+}
+#maindiv.infoopen #infocard { display: block; }
+#realappbarbtu:checked ~ #infocard { display: none; }
+#infohead { display: flex; align-items: center; justify-content: space-between; font-size: 1.8vh; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.85; }
+#infoclose, #infoskip {
+	font-family: inherit;
+	color: rgb(255,255,255);
+	background-color: rgba(255,255,255,0.1);
+	border: 1px solid rgba(255,255,255,0.4);
+	border-radius: 0.8vh;
+}
+#infoclose { font-size: 1.8vh; padding: 0.6vh 1vw; text-transform: none; letter-spacing: 0; }
+#infoname { margin-top: 1.4vh; font-size: 3vh; line-height: 1.2; overflow-wrap: anywhere; }
+#infosource { margin-top: 0.6vh; font-size: 2vh; opacity: 0.75; }
+#infoseekrow { display: flex; align-items: center; gap: 1vw; margin-top: 2.4vh; }
+#infotime { flex: 0 0 auto; font-size: 1.8vh; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#infoseekbar {
+	--seek: 0%;
+	flex: 1;
+	min-width: 0;
+	height: 1vh;
+	margin: 0;
+	border-radius: 0.5vh;
+	outline: none;
+	-webkit-appearance: none;
+	background: linear-gradient(to right, rgb(var(--accent)) var(--seek), rgba(255,255,255,0.3) var(--seek));
+}
+#infoseekbar::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	width: 2.6vh;
+	height: 2.6vh;
+	border-radius: 50%;
+	background: rgb(var(--accent));
+	border: 2px solid rgb(255,255,255);
+}
+#infoseekbar:disabled { opacity: 0.5; }
+#infoactions { margin-top: 2.4vh; }
+#infoskip { display: flex; align-items: center; gap: 0.6vw; font-size: 2vh; padding: 1vh 1.4vw; }
+#infoskip svg { display: block; width: 3vh; height: 3vh; fill: currentColor; }
+#infoskip:hover, #infoclose:hover { background-color: rgba(var(--accent), 0.45); }
