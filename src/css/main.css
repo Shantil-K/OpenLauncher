@@ -13,10 +13,12 @@
     --bartile: 5vw;
     --menutile: 5vw;
     --barh: 15vh;
-    --barrow: 2;
     --menurow: 2;
     --barname: 1.5vh;
     --menuname: 1.5vh;
+    --recenth: 15vh;
+    --shiftx: 0px;
+    --shifty: 0px;
 }
 
 #appluncher,#appbar {
@@ -26,7 +28,8 @@
 }
 #appbar {
     grid-template-columns: repeat(auto-fill, var(--bartile));
-    grid-template-rows: repeat(auto-fill, calc(var(--bartile) * var(--barrow)));
+    /* one row exactly as tall as the bar, so the tiles are centred in it and never spill below the screen */
+    grid-template-rows: var(--barh);
 }
 #appluncher {
     grid-template-columns: repeat(auto-fill, var(--menutile));
@@ -351,7 +354,7 @@ z-index:9999;
 	background-color: rgba(255,255,255,0.1);
 	border: 1px solid rgba(255,255,255,0.4);
 }
-#settingsclose { font-size: 2vh; padding: 0.8vh 1.6vw; border-radius: 0.8vh; }
+#settingsclose { width: 5.4vh; height: 5.4vh; padding: 0.9vh; border-radius: 0.8vh; }
 #settingsbody { display: flex; flex: 1; min-height: 0; }
 #settingstabs {
 	display: flex;
@@ -432,7 +435,8 @@ z-index:9999;
 	border: 1px solid rgba(255,255,255,0.4);
 	border-radius: 0.8vh;
 }
-#infoclose { font-size: 1.8vh; padding: 0.6vh 1vw; text-transform: none; letter-spacing: 0; }
+#infoclose { width: 4.2vh; height: 4.2vh; padding: 0.7vh; }
+#settingsclose svg, #infoclose svg { display: block; width: 100%; height: 100%; fill: currentColor; }
 #infoname { margin-top: 1.4vh; font-size: 3vh; line-height: 1.2; overflow-wrap: anywhere; }
 #infosource { margin-top: 0.6vh; font-size: 2vh; opacity: 0.75; }
 #infoseekrow { display: flex; align-items: center; gap: 1vw; margin-top: 2.4vh; }
@@ -461,3 +465,137 @@ z-index:9999;
 #infoskip { display: flex; align-items: center; gap: 0.6vw; font-size: 2vh; padding: 1vh 1.4vw; }
 #infoskip svg { display: block; width: 3vh; height: 3vh; fill: currentColor; }
 #infoskip:hover, #infoclose:hover { background-color: rgba(var(--accent), 0.45); }
+
+/* rows that draw their own controls (backup, lists, text boxes): control under the label, full width */
+.srow.wide { flex-direction: column; align-items: stretch; gap: 1.2vh; }
+.srow.wide .slabel { flex: none; }
+.srow.wide .scontrol { justify-content: flex-start; }
+.stext, .sarea {
+	font-family: inherit;
+	font-size: 2vh;
+	color: rgb(255,255,255);
+	background-color: rgba(255,255,255,0.08);
+	border: 1px solid rgba(255,255,255,0.4);
+	border-radius: 0.8vh;
+	padding: 1vh 1vw;
+	box-sizing: border-box;
+}
+.stext { flex: 1; min-width: 20vw; }
+.sarea { width: 100%; height: 16vh; resize: none; font-size: 1.6vh; }
+.sstatus { align-self: center; font-size: 1.8vh; opacity: 0.85; }
+
+/* recent apps: bar-sized tiles in the same columns as the bottom bar, sitting just above it */
+#recentrow {
+	display: none;
+	position: fixed;
+	left: 1vw;
+	width: calc(100vw - 2vw);
+	bottom: calc(var(--barh) + 1.5vh);
+	z-index: 5;
+	grid-template-columns: repeat(auto-fill, var(--bartile));
+	justify-content: center;
+	align-items: end;
+}
+#maindiv.has-recent #recentrow { display: grid; }
+#realappbarbtu:checked ~ #recentrow { display: none !important; }
+#recentlabel {
+	position: absolute;
+	left: 0;
+	top: -3vh;
+	margin: 0;
+	font-size: 1.6vh;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: rgba(255,255,255,0.85);
+	text-shadow: 0 1px 4px rgba(0,0,0,0.85);
+}
+#recentrow .appname { font-size: var(--barname); height: calc(var(--barname) * 1.3333); text-shadow: 0 1px 4px rgba(0,0,0,0.85); }
+#maindiv.hide-bar-names #recentrow .appname { display: none; }
+#maindiv.hide-bar-names #recentrow .appicon { display: block; }
+#recentrow .appitem { padding-bottom: 0; }
+#maindiv.hide-bar-names #recentrow .appitem { padding-bottom: 10px; }
+#maindiv.has-recent .layer[data-v="bottom"] { padding-bottom: calc(var(--barh) + var(--recenth) + 4.5vh); }
+
+/* OLED protection (screen.js): the UI shifts a few pixels now and then, and dims or hides after a while with no input */
+.layer, #appbar, #recentrow, #infobtn { transition: opacity 3s ease, transform 2s ease; }
+/* only while pixel shift is on, so nothing is moved to its own GPU layer for people who don't use it */
+#maindiv.shifting .layer, #maindiv.shifting #appbar, #maindiv.shifting #recentrow, #maindiv.shifting #infobtn {
+	transform: translate(var(--shiftx), var(--shifty));
+}
+#maindiv.idle .layer, #maindiv.idle #appbar, #maindiv.idle #recentrow, #maindiv.idle #infobtn { opacity: 0.3; }
+#maindiv.idle-hidebar #appbar, #maindiv.idle-hidebar #recentrow, #maindiv.idle-hidebar #infobtn { opacity: 0; pointer-events: none; }
+
+/* weather widget (weather.js): under the clock and date, or on its own layer */
+#weather { display: flex; flex-direction: column; align-items: inherit; margin-top: 1vh; text-shadow: 0 2px 8px rgba(0,0,0,0.75); }
+#weatherrow { display: flex; align-items: center; gap: 0.6vw; }
+#weathericon svg { display: block; width: 4.6vh; height: 4.6vh; fill: currentColor; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+#weathertemp { font-size: 3.4vh; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#weatherdetail { font-size: 1.8vh; opacity: 0.9; white-space: nowrap; }
+
+/* the list of the user's own wallpapers (Wallpaper tab) */
+.listrow { display: flex; align-items: center; gap: 1vw; width: 100%; padding: 0.6vh 0.6vw; box-sizing: border-box; background-color: rgba(255,255,255,0.06); border-radius: 0.8vh; }
+.listkind { flex: 0 0 5vw; font-size: 1.6vh; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.7; }
+.listname { flex: 1; min-width: 0; font-size: 2vh; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.listremove { flex: 0 0 auto; width: 4.4vh; height: 4.4vh; padding: 0.7vh; }
+.listremove svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+
+/* folders in the app drawer */
+.foldericon { position: relative; width: 100%; height: 0; padding-top: 100%; background-color: rgba(255,255,255,0.14); border-radius: 1vh; }
+.foldericon svg { position: absolute; top: 14%; left: 14%; width: 72%; height: 72%; fill: rgb(255,255,255); }
+#maindiv.editing .foldertile .appctl { display: none !important; }
+
+/* "Move to folder" picker */
+#folderbackdrop { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 20000; background-color: rgba(0,0,0,0.55); }
+#folderpicker {
+	display: none;
+	position: fixed;
+	top: 20vh;
+	left: 33vw;
+	width: 34vw;
+	max-height: 60vh;
+	overflow-y: auto;
+	box-sizing: border-box;
+	padding: 2vh 1.6vw;
+	z-index: 20001;
+	color: rgb(255,255,255);
+	background-color: rgba(18,18,24,0.97);
+	border: 2px solid rgba(var(--accent), 0.85);
+	border-radius: 1.6vh;
+	scrollbar-width: none;
+}
+#maindiv.pickeropen #folderbackdrop { display: block; }
+#maindiv.pickeropen #folderpicker { display: block; }
+#folderhead { display: flex; align-items: center; justify-content: space-between; font-size: 2.6vh; margin-bottom: 1.6vh; }
+#folderclose { width: 4.4vh; height: 4.4vh; padding: 0.7vh; font-family: inherit; color: rgb(255,255,255); background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); border-radius: 0.8vh; }
+#folderclose svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+#folderclose:hover { background-color: rgba(var(--accent), 0.45); }
+#folderlist { display: flex; flex-direction: column; gap: 0.8vh; }
+#folderlist .sopt { text-align: left; }
+#foldernew { display: flex; gap: 0.8vw; margin-top: 2vh; }
+#foldermessage { margin-top: 1vh; min-height: 2vh; }
+.listinput { flex: 1; min-width: 0; }
+
+/* remote control (dpad.js): the focus ring, and the small menu OK opens on an app in Edit mode */
+.dfocus { outline: 0.5vh solid rgb(var(--accent)); outline-offset: 0.3vh; }
+.appitem.dfocus { outline: none; background-color: rgba(var(--accent), 0.5); box-shadow: inset 0 0 0 0.4vh rgb(var(--accent)); }
+.foldertile.dfocus .foldericon, .appitem.dfocus .appicon { opacity: 1; }
+#appmenubackdrop { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 20000; background-color: rgba(0,0,0,0.55); }
+#appmenu {
+	display: none;
+	position: fixed;
+	top: 24vh;
+	left: 37vw;
+	width: 26vw;
+	box-sizing: border-box;
+	padding: 2vh 1.4vw;
+	z-index: 20001;
+	color: rgb(255,255,255);
+	background-color: rgba(18,18,24,0.97);
+	border: 2px solid rgba(var(--accent), 0.85);
+	border-radius: 1.6vh;
+}
+#maindiv.menuopen #appmenubackdrop { display: block; }
+#maindiv.menuopen #appmenu { display: block; }
+#appmenutitle { font-size: 2.6vh; margin-bottom: 1.6vh; overflow-wrap: anywhere; }
+#appmenulist { display: flex; flex-direction: column; gap: 0.8vh; }
+#appmenulist .sopt { text-align: left; }

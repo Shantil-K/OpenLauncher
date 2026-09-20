@@ -50,6 +50,7 @@ function initinfo(){
 	infobtn.addEventListener("click",() => {
 		if(infoisopen()){ closeinfo(); } else { openinfo(); }
 	});
+	infoclose.innerHTML=iconsvg("close");
 	infoclose.addEventListener("click",closeinfo);
 	infoskip.addEventListener("click",() => {
 		skipvideo();

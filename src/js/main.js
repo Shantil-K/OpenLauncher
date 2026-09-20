@@ -5,7 +5,7 @@ let editing=false;
 const SETTINGS_KEY='openlauncher.settings';
 // used until the user pins/unpins something for the first time
 const DEFAULT_PINNED=["com.webos.app.livetv","com.webos.app.hdmi1","com.webos.app.hdmi2","com.webos.app.hdmi3","com.webos.app.hdmi4","com.webos.app.mediadiscovery","com.famobi.ctr","com.halfbrick.fruitninja","com.github.k4zmu2a.space-cadet-pinball"];
-let settings={pinned:null,hidden:[],order:[]};
+let settings={pinned:null,hidden:[],order:[],folders:[],appfolder:{}};
 // hover-only reordering: rest on a tile's Move zone to pick the app up, hover other tiles to move it, rest on it to drop
 const PICKUP_MS=875;
 const DROP_MS=700;
@@ -53,6 +53,10 @@ appicon.src="/access/fallback.png";
 		if(!inbar){
 			appitem.hidebtn=ctlbutton(() => togglehide(eachapp.id));
 			appctl.appendChild(appitem.hidebtn);
+			const folderbtn=ctlbutton(() => openfolderpicker(eachapp.id));
+			folderbtn.classList.add("wide");
+			setctl(folderbtn,"Move to folder","folder");
+			appctl.appendChild(folderbtn);
 		}
 		const movezone=document.createElement("div");
 		movezone.setAttribute("class","movezone");
@@ -86,6 +90,7 @@ appicon.src="/access/fallback.png";
 
 		appitem.addEventListener("click", function(){
 			if(editing){ return; }
+			recordrecent(eachapp.id);
 			launchapp(eachapp.id);
 		});
 		return appitem;
@@ -100,10 +105,10 @@ function launchapp(id){
 }
 
 // id -> tile element, for the bar and for the drawer (an app has one tile in each)
-const tilecache={bar:new Map(),drawer:new Map()};
+const tilecache={bar:new Map(),drawer:new Map(),recent:new Map(),folders:new Map()};
 
-function tilefor(app,inbar){
-	const cache=inbar?tilecache.bar:tilecache.drawer;
+function tilefor(app,inbar,cache){
+	cache=cache || (inbar?tilecache.bar:tilecache.drawer);
 	let tile=cache.get(app.id);
 	if(!tile){
 		tile=maketile(app,inbar);
@@ -160,6 +165,7 @@ function orderedapps(){
 
 function startcarry(id,inbar){
 	carrying={id,inbar,armed:false};
+	carryhint.textContent="Hover another app to move it there. Rest on it to drop.";
 	maindiv.classList.add("carrying");
 	render();
 }
@@ -193,6 +199,14 @@ function loadsettings(){
 			settings.pinned=Array.isArray(saved.pinned)?saved.pinned:null;
 			settings.hidden=Array.isArray(saved.hidden)?saved.hidden:[];
 			settings.order=Array.isArray(saved.order)?saved.order:[];
+			settings.folders=Array.isArray(saved.folders)?saved.folders.filter((f) => f && typeof f.id==="string" && typeof f.name==="string"):[];
+			const known=settings.folders.map((f) => f.id);
+			settings.appfolder={};
+			if(saved.appfolder && typeof saved.appfolder==="object"){
+				Object.keys(saved.appfolder).forEach((appid) => {
+					if(known.indexOf(saved.appfolder[appid])!==-1){ settings.appfolder[appid]=saved.appfolder[appid]; }
+				});
+			}
 		}
 	} catch(e) {}
 }
@@ -241,6 +255,7 @@ function togglehide(id){
 
 function toggleedit(){
 	editing=!editing;
+	closefolderpicker();
 	clearTimeout(droptimer);
 	carrying=null;
 	maindiv.classList.remove("carrying");
@@ -292,175 +307,41 @@ function render() {
 	const byid={};
 	applist.forEach((eachapp) => {byid[eachapp.id]=eachapp;});
 	const barapps=pinnedids().filter((eachid) => byid[eachid] && !ishidden(eachid)).map((eachid) => byid[eachid]);
-	const drawerapps=orderedapps().filter((eachapp) => editing || !ishidden(eachapp.id));
 	placetiles(appbar,barapps.map((eachapp) => tilefor(eachapp,true)),1);   // the Apps button stays first
-	placetiles(appluncher,drawerapps.map((eachapp) => tilefor(eachapp,false)),0);
+	placetiles(appluncher,drawertilelist(),0);
+	renderrecent();
 }
 
-let imagewallpapers=false;
-let imagetimer=null;
-let imageswap=null;
-// last resort when neither the network videos nor access/wallpaper/loop.mp4 can play
-function startimagewallpapers() {
-	if(imagewallpapers){ return; }
-	imagewallpapers=true;
-	bgmode="images";
-	bgvideo.style.display="none";
-	bgvideo.removeAttribute("src");
-	bgvideo.load();
-	imageswap=() => {
-		let wallpaperfile=wallpapers[Math.floor(Math.random() * wallpapers.length)];
-		let preload=new Image();
-		preload.src='access/wallpaper/'+wallpaperfile;
-		//force the decode to happen now, off the swap, so the swap itself is a cheap composite instead of a stall.
-		preload.decode().catch(()=>{}).then(() => {
-			maindiv.style='background: no-repeat center / 100% url(access/wallpaper/'+wallpaperfile+') !important;';
-		});
-	};
-	imageswap();
-	imagetimer=setInterval(imageswap,20*1000);
+// ---- recent apps: the apps launched from here, newest first, shown as a row above the bottom bar (see the Apps settings)
+const RECENT_KEY='openlauncher.recent';
+const RECENT_MAX=20;
+let recent=[];
+
+function loadrecent(){
+	try {
+		const saved=JSON.parse(localStorage.getItem(RECENT_KEY));
+		if(Array.isArray(saved)){ recent=saved.filter((id) => typeof id==="string").slice(0,RECENT_MAX); }
+	} catch(e) {}
 }
 
-// leave the image fallback so a video can play again (used when the video source is switched in settings)
-function stopimagewallpapers() {
-	if(!imagewallpapers){ return; }
-	imagewallpapers=false;
-	clearInterval(imagetimer);
-	imagetimer=null;
-	maindiv.style="";
-	bgvideo.style.display="";
+function recordrecent(id){
+	if(id===appid){ return; }
+	recent=[id].concat(recent.filter((other) => other!==id)).slice(0,RECENT_MAX);
+	try {
+		localStorage.setItem(RECENT_KEY,JSON.stringify(recent));
+	} catch(e) {}
+	renderrecent();
 }
 
-// Wallpaper source order: network videos (aerials.js) -> local access/wallpaper/loop.mp4 -> still images.
-// The "Video source" setting can start at the local video instead of the network ones.
-let bgmode="aerials";
-let bgstarted=false;
-let lastsource=null;
-let bgqueue=[];
-let bgcurrent=null;
-let bgerrors=0;
-let bglasttime=-1;
-let applehttp=false;
-const APPLE_HTTPS=/^https:\/\/sylvan\.apple\.com\//;
-// access/wallpaper/loop.mp4 is one still per wallpaper, this many seconds each (SECS in scripts/make-wallpaper-video.sh)
-const LOCAL_SEGMENT_SECONDS=20;
-
-function loadaerial(entry) {
-	bglasttime=-1;
-	bgvideo.loop=false;
-	bgvideo.src=applehttp?entry.u.replace(APPLE_HTTPS,"http://sylvan.apple.com/"):entry.u;
-	bgvideo.play().catch(()=>{});
-}
-
-function nextaerial() {
-	if(bgqueue.length===0){
-		bgqueue=aerials.slice();
-		for(let i=bgqueue.length-1;i>0;i--){
-			const j=Math.floor(Math.random()*(i+1));
-			[bgqueue[i],bgqueue[j]]=[bgqueue[j],bgqueue[i]];
-		}
-	}
-	bgcurrent=bgqueue.pop();
-	loadaerial(bgcurrent);
-}
-
-function startaerials() {
-	stopimagewallpapers();
-	bgmode="aerials";
-	bgerrors=0;
-	nextaerial();
-}
-
-function startlocalvideo() {
-	stopimagewallpapers();
-	bgmode="local";
-	bgvideo.loop=true;
-	bgvideo.src="access/wallpaper/loop.mp4";
-	bgvideo.play().catch(()=>{});
-}
-
-// react to the "Video source" setting (called by applyprefs); only acts when that setting actually changed
-function applybackgroundsource() {
-	if(!bgstarted || prefs.videoSource===lastsource){ return; }
-	lastsource=prefs.videoSource;
-	if(prefs.videoSource==="offline"){
-		startlocalvideo();
-	} else if(typeof aerials!=="undefined" && aerials.length){
-		startaerials();
-	}
-}
-
-// what the info card shows
-function nowplaying() {
-	if(bgmode==="aerials" && bgcurrent){
-		return {name:bgcurrent.n,source:bgcurrent.s+", streamed",video:true};
-	}
-	if(bgmode==="local"){
-		return {name:"Built-in wallpaper loop",source:"Offline (built into the launcher)",video:true};
-	}
-	return {name:"Rotating pictures",source:"Offline (built into the launcher)",video:false};
-}
-
-function skipvideo() {
-	if(bgmode==="aerials"){
-		nextaerial();
-	} else if(bgmode==="local" && isFinite(bgvideo.duration)){
-		// the local loop is one wallpaper after another, so "the next video" is the next wallpaper
-		const next=(Math.floor(bgvideo.currentTime/LOCAL_SEGMENT_SECONDS)+1)*LOCAL_SEGMENT_SECONDS;
-		bgvideo.currentTime=next<bgvideo.duration?next:0;
-	} else if(bgmode==="images" && imageswap){
-		imageswap();
-	}
-}
-
-function bgfailed() {
-	if(bgmode==="aerials"){
-		// Apple's certificate chain isn't trusted everywhere, and plain http works for them
-		if(!applehttp && APPLE_HTTPS.test(bgcurrent.u)){
-			applehttp=true;
-			loadaerial(bgcurrent);
-			return;
-		}
-		if(++bgerrors>=6){
-			startlocalvideo();
-		} else {
-			nextaerial();
-		}
-	} else if(bgmode==="local"){
-		startimagewallpapers();
-	}
-}
-
-function startbackground() {
-	bgvideo.onerror=bgfailed;
-	bgvideo.onplaying=() => {bgerrors=0;};
-	bgvideo.onended=() => {if(bgmode==="aerials"){ nextaerial(); }};
-	bgvideo.onloadedmetadata=() => {
-		if(bgmode==="local" && isFinite(bgvideo.duration)){ bgvideo.currentTime=Math.random()*bgvideo.duration; }
-	};
-	// don't stream or decode while another app is in front
-	document.addEventListener("visibilitychange",() => {
-		if(document.hidden){
-			bgvideo.pause();
-		} else if(bgmode!=="images"){
-			bgvideo.play().catch(()=>{});
-		}
-	});
-	// a stream that stalls or died while the TV slept never fires an error, so skip it if time stops moving
-	setInterval(() => {
-		if(bgmode!=="aerials" || document.hidden || bgvideo.paused){ return; }
-		if(bgvideo.currentTime===bglasttime){
-			nextaerial();
-		} else {
-			bglasttime=bgvideo.currentTime;
-		}
-	},30*1000);
-	bgstarted=true;
-	lastsource=prefs.videoSource;
-	if(prefs.videoSource!=="offline" && typeof aerials!=="undefined" && aerials.length){
-		nextaerial();
-	} else {
-		startlocalvideo();
+function renderrecent() {
+	if(!applist){ return; }
+	const byid={};
+	applist.forEach((eachapp) => {byid[eachapp.id]=eachapp;});
+	const apps=prefs.recentShow?recent.filter((id) => byid[id] && !ishidden(id)).slice(0,prefs.recentCount).map((id) => byid[id]):[];
+	maindiv.classList.toggle("has-recent",apps.length>0);
+	placetiles(recentrow,apps.map((eachapp) => tilefor(eachapp,true,tilecache.recent)),1);   // the label stays first
+	if(apps.length>0){
+		recentlabel.style.left=(recentrow.children[1].offsetLeft+10)+"px";
 	}
 }
 
@@ -482,34 +363,21 @@ if (!( JSON.stringify(applist) === JSON.stringify(newapplist) ) ) {
 	console.log("reinit");
 tilecache.bar.clear();
 tilecache.drawer.clear();
+tilecache.recent.clear();
 render();
 }
 
 }
 async function inithomescreen() {
 await initpermcheck();
-//back button
-window.addEventListener("keydown", function(inEvent){
-	if (inEvent.keyCode === 461) {
-		if(settingsisopen()){
-			closesettings();
-		} else if(infoisopen()){
-			closeinfo();
-		} else {
-			realappbarbtu.click();
-		}
-	}
-});
-
-
 loadsettings();
+loadrecent();
 editbtn.addEventListener("click",toggleedit);
 render();
 
 }
 
 document.addEventListener("DOMContentLoaded",inithomescreen);
-document.addEventListener("DOMContentLoaded",startbackground);
 
 document.addEventListener("webOSRelaunch", reload );
 

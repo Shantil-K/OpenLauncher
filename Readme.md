@@ -15,6 +15,8 @@ The list of aerial wallpaper videos (Apple, Amazon and community) comes from
 [conreo/couchy-launcher](https://github.com/conreo/couchy-launcher). The videos are streamed from their
 original hosts and are not part of this repo.
 
+Weather data is by [Open-Meteo.com](https://open-meteo.com) ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)).
+
 It also depends on [QwQwebosTV.js](https://git.exkc.moe/qvh/QwQwebosTV.js), a
 helper library also written by exkc, vendored directly at
 `src/js/lib/QwQwebosTV.js/main.js` so a plain clone builds without extra steps.
@@ -65,7 +67,12 @@ a seekbar you can drag to jump around, and **Skip video**. With the built-in loo
 Back closes the card.
 
 In **Settings > Wallpaper** you can switch the **Video source** to *Offline (built in)* to stop streaming and play only the
-local `loop.mp4`, or back to *Online (streamed)*.
+local `loop.mp4`, to *My own* (below), or back to *Online (streamed)*.
+
+*My own* plays links you add, in random order: videos (`.mp4 .mov .mkv .webm .m4v .ts`) play through, photos
+(`.jpg .png .webp .gif .bmp .avif`) stay for 10 s to 1 min (your choice). Use `http://` or `https://` links, or `file://` links /
+absolute paths for files on the TV or a USB drive. A link that won't load is skipped, and if the list is empty or keeps failing
+the online videos play instead.
 
 To refresh the aerial list:
 
@@ -81,8 +88,11 @@ Open the app drawer and press the gear next to **Edit**. Back closes it. Setting
 
 - **Clock**: digital, stacked, analog, analog minimal or off; seconds on/off; 12/24-hour; and where on screen it goes (3x3 grid).
 - **Date**: format (`YYYY/MM/DD`, `DD/MM/YYYY`, `DD Month YYYY`, ...), an optional day of week before or after the date, and where it goes (under the clock or anywhere on screen). Turn Date and Day of week both off to hide it.
-- **Apps**: size of the bottom bar and of the app menu, names under the apps and their size (bar and menu separately; the size only shows while names are on), and the colour used when hovering an app.
-- **Wallpaper**: where the wallpaper video comes from (streamed online or built in).
+- **Weather**: the current temperature and conditions from [Open-Meteo](https://open-meteo.com) (free, needs the internet). Type a city and press Search, then choose °C or °F and where it goes. Refreshed every 15 minutes.
+- **Apps**: size of the bottom bar and of the app menu, names under the apps and their size (bar and menu separately; the size only shows while names are on), a **Recent apps** row above the bottom bar (off by default), **Folders** (add, rename, delete), and the colour used when hovering an app.
+- **Wallpaper**: where the wallpaper comes from: streamed online, built in, or your own links.
+- **Screen**: protection for OLED TVs, all off by default. **Pixel shift** nudges the clock, bar and buttons a few pixels every minute. **When idle after** 1 to 10 minutes without any input it dims everything, or hides the bar and dims the rest; any input wakes it.
+- **Backup**: **Export** your settings and app layout as JSON and **Import** them again. With root the backup is also written to and read from `/media/developer/openlauncher-settings.json` (**Load file**); without root it is shown in a text box.
 - **TV**: opens the TV's own settings (`com.palm.app.settings`), and resets the launcher settings to their defaults.
 
 To add a setting, add an item to `SETTINGS_SCHEMA` in `src/js/settings.js` (the panel, defaults and saving are generated from it),
@@ -99,7 +109,21 @@ hovering an app shows its controls over it:
   with the hover colour) to pick the app up. Then just move the pointer over other apps in the same drawer or bar and the app takes
   their place, following the pointer. Rest on it for a moment to drop it.
 
+- **Folder icon**: put the app in a folder (or take it out), or make a new folder. Folders show first in the app menu; open one to see its apps, and use the Back tile to leave.
+
 Everything is saved in the app's localStorage and kept between launches.
+
+# Remote control (D-pad)
+
+Everything works with the arrow keys and OK, not only the Magic Remote pointer. The first key press shows a highlight; the
+arrows move it to the nearest item in that direction, **OK** activates it, **Back** goes up one level (closes the panel, leaves
+a folder, then opens/closes the app menu). Moving the pointer switches back to pointer mode.
+
+- **Coloured buttons** are shortcuts: **Yellow** opens/closes Settings, **Red** the info card, **Blue** turns Edit on and off.
+- In **Edit mode**, OK on an app opens a small menu: pin/unpin, hide/show, move to folder, and **Reorder** (then the arrows move
+  the app, and OK or Back drops it).
+- In a **text box** OK opens the on-screen keyboard; while typing the arrows belong to the box, and Back leaves it.
+- On the **seekbar** in the info card, Left/Right jump 2%.
 
 # Auto-start
 

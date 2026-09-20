@@ -13,6 +13,8 @@
 //            "position" a 3x3 grid of screen positions ("top-left" ... "bottom-right"); withClock adds "with-clock"
 //            "action"   one button (`button` is its text) that calls run(); add `confirm` (a question) and `confirmButton`
 //                       to ask "are you sure?" first, with a Cancel
+//            "custom"   draws itself: render(box, item) fills `box`. Give it a `key` too if it stores a value, plus
+//                       `valid(value)` so a bad saved value is ignored. `wide: true` puts the control under the label.
 //   show     optional function(prefs) returning false to hide the row while it doesn't apply
 
 const PREFS_KEY='openlauncher.prefs';
@@ -35,6 +37,14 @@ const SETTINGS_SCHEMA=[
 		{key:"dayPos",label:"Day goes",type:"choice",default:"before",options:[["before","Before date"],["after","After date"]],show:(p) => p.dateShow && p.dayStyle!=="off"},
 		{key:"datePos",label:"Position",type:"position",default:"with-clock",withClock:true,show:(p) => p.dateShow || p.dayStyle!=="off"}
 	]},
+	{id:"weather",title:"Weather",items:[
+		{key:"weatherShow",label:"Weather",type:"choice",default:false,options:ON_OFF,hint:"Current weather from Open-Meteo (needs the internet)"},
+		{key:"weatherPlace",label:"Location",type:"custom",wide:true,default:null,show:(p) => p.weatherShow,
+			valid:(v) => v===null || (!!v && typeof v.name==="string" && typeof v.lat==="number" && typeof v.lon==="number"),
+			render:(box) => renderweatherplace(box)},
+		{key:"weatherUnit",label:"Temperature",type:"choice",default:"c",options:[["c","\u00b0C"],["f","\u00b0F"]],show:(p) => p.weatherShow},
+		{key:"weatherPos",label:"Position",type:"position",default:"with-clock",withClock:true,show:(p) => p.weatherShow}
+	]},
 	{id:"apps",title:"Apps",items:[
 		{key:"barSize",label:"Bottom bar size",type:"choice",default:5,options:[[4,"Small"],[5,"Medium"],[6,"Large"],[7,"Extra large"]]},
 		{key:"menuSize",label:"App menu size",type:"choice",default:5,options:[[4,"Small"],[5,"Medium"],[6,"Large"],[7.5,"Extra large"]]},
@@ -42,13 +52,32 @@ const SETTINGS_SCHEMA=[
 		{key:"barNameSize",label:"Name size in bar",type:"choice",default:1.5,options:[[1.2,"Small"],[1.5,"Medium"],[1.9,"Large"],[2.3,"Extra large"]],show:(p) => p.barNames},
 		{key:"menuNames",label:"Names in menu",type:"choice",default:true,options:ON_OFF},
 		{key:"menuNameSize",label:"Name size in menu",type:"choice",default:1.5,options:[[1.2,"Small"],[1.5,"Medium"],[1.9,"Large"],[2.3,"Extra large"]],show:(p) => p.menuNames},
+		{key:"recentShow",label:"Recent apps",type:"choice",default:false,options:ON_OFF,hint:"A row of the apps you launched last, above the bottom bar"},
+		{key:"recentCount",label:"How many recent apps",type:"choice",default:5,options:[[3,"3"],[5,"5"],[7,"7"],[9,"9"]],show:(p) => p.recentShow},
+		{label:"Folders",type:"custom",wide:true,render:(box) => renderfolderlist(box),
+			hint:"Group apps in the app menu. In Edit mode, an app's folder button puts it in a folder."},
 		{key:"accent",label:"Hover colour",type:"swatch",default:"255,150,255",options:[
 			["255,150,255","Pink"],["255,90,90","Red"],["255,160,60","Orange"],["255,215,80","Yellow"],["110,220,120","Green"],
 			["80,220,230","Cyan"],["90,170,255","Blue"],["170,120,255","Purple"],["255,255,255","White"]]}
 	]},
 	{id:"wallpaper",title:"Wallpaper",items:[
-		{key:"videoSource",label:"Video source",type:"choice",default:"online",options:[["online","Online (streamed)"],["offline","Offline (built in)"]],
-			hint:"Online streams about 2.7 GB per hour. Offline plays the video built into the launcher."}
+		{key:"videoSource",label:"Video source",type:"choice",default:"online",options:[["online","Online (streamed)"],["offline","Offline (built in)"],["custom","My own"]],
+			hint:"Online streams about 2.7 GB per hour. Offline plays the video built into the launcher. My own plays the links you add below."},
+		{key:"customUrls",label:"My wallpapers",type:"custom",wide:true,default:[],show:(p) => p.videoSource==="custom",
+			hint:"Links to videos (.mp4 .mov .mkv .webm) and photos (.jpg .png .webp). They play in random order.",
+			valid:(v) => Array.isArray(v) && v.length<=CUSTOM_MAX && v.every(validcustomurl),
+			render:(box) => renderwallpaperlist(box)},
+		{key:"customSeconds",label:"Show each photo for",type:"choice",default:20,options:[[10,"10 s"],[20,"20 s"],[30,"30 s"],[60,"1 min"]],show:(p) => p.videoSource==="custom"}
+	]},
+	{id:"screen",title:"Screen",items:[
+		{key:"pixelShift",label:"Pixel shift",type:"choice",default:0,options:[[0,"Off"],[1,"Small"],[2,"Large"]],
+			hint:"Nudges the clock, bar and buttons a few pixels every minute so an OLED screen doesn't keep the same pixels lit"},
+		{key:"idleAfter",label:"When idle after",type:"choice",default:0,options:[[0,"Never"],[1,"1 min"],[2,"2 min"],[5,"5 min"],[10,"10 min"]],
+			hint:"No pointer or button input for this long"},
+		{key:"idleAction",label:"Then",type:"choice",default:"dim",options:[["dim","Dim everything"],["hidebar","Hide the bar, dim the rest"]],show:(p) => p.idleAfter>0}
+	]},
+	{id:"backup",title:"Backup",items:[
+		{label:"Settings backup",type:"custom",wide:true,hint:"Export your settings and app layout as JSON, or import a backup again.",render:(box,item) => renderbackup(box,item)}
 	]},
 	{id:"tv",title:"TV",items:[
 		{type:"action",label:"TV settings",hint:"Opens the TV's own settings",button:"Open",run:() => launchapp("com.palm.app.settings")},
@@ -69,6 +98,9 @@ const POSITION_RE=/^(top|center|bottom)-(left|center|right)$/;
 
 // a saved value only counts if the schema still offers it
 function validpref(item,value){
+	if(item.valid){
+		return item.valid(value)===true;
+	}
 	if(item.type==="position"){
 		return POSITION_RE.test(value) || (item.withClock===true && value==="with-clock");
 	}
@@ -91,13 +123,17 @@ function loadprefs(){
 }
 
 // only what differs from the defaults is stored, so new defaults reach people who never changed a setting
-function saveprefs(){
+function changedprefs(){
 	const changed={};
 	for(const key in prefs){
-		if(prefs[key]!==PREF_DEFAULTS[key]){ changed[key]=prefs[key]; }
+		if(JSON.stringify(prefs[key])!==JSON.stringify(PREF_DEFAULTS[key])){ changed[key]=prefs[key]; }
 	}
+	return changed;
+}
+
+function saveprefs(){
 	try {
-		localStorage.setItem(PREFS_KEY,JSON.stringify(changed));
+		localStorage.setItem(PREFS_KEY,JSON.stringify(changedprefs()));
 	} catch(e) {}
 }
 
@@ -131,9 +167,10 @@ function applysizes(){
 	// the bar grows with its tiles
 	const barheight=Math.max(15,prefs.barSize*aspect*1.05+namesvh(prefs.barNames,prefs.barNameSize));
 	root.setProperty("--barh",(Math.round(barheight*10)/10)+"vh");
-	// grid rows are normally 2x a tile's width tall; bigger names need more, no names need less
+	// the app menu's grid rows are normally 2x a tile's width tall; bigger names need more, no names need less
 	const rowfor=(tile,names,size) => names?Math.max(2,Math.round((1+namesvh(true,size)/aspect/tile+0.43)*100)/100):1.5;
-	root.setProperty("--barrow",String(rowfor(prefs.barSize,prefs.barNames,prefs.barNameSize)));
+	// the recent-apps row is a row of bar-sized tiles sitting above the bar
+	root.setProperty("--recenth",(Math.round((prefs.barSize*aspect*1.05+namesvh(prefs.barNames,prefs.barNameSize))*10)/10)+"vh");
 	root.setProperty("--menurow",String(rowfor(prefs.menuSize,prefs.menuNames,prefs.menuNameSize)));
 }
 
@@ -144,6 +181,9 @@ function applyprefs(){
 	maindiv.classList.toggle("hide-menu-names",!prefs.menuNames);
 	applyclock(prefs);
 	applybackgroundsource();
+	renderrecent();
+	applyscreen();
+	applyweather();
 }
 
 // ---- panel
@@ -194,6 +234,8 @@ function controlfor(item){
 		});
 	} else if(item.type==="position"){
 		box.appendChild(positionpicker(item));
+	} else if(item.type==="custom"){
+		item.render(box,item);
 	} else if(item.type==="action"){
 		if(item.confirm && confirming===item){
 			box.appendChild(el("span","sconfirm",item.confirm));
@@ -240,7 +282,7 @@ function renderpane(){
 	settingspane.innerHTML="";
 	section.items.forEach((item) => {
 		if(item.show && !item.show(prefs)){ return; }
-		const row=el("div","srow");
+		const row=el("div",item.wide?"srow wide":"srow");
 		const label=el("div","slabel");
 		label.appendChild(el("span","slabeltext",item.label));
 		if(item.hint){ label.appendChild(el("small","shint",item.hint)); }
@@ -269,6 +311,7 @@ function initsettings(){
 	startclock();
 	applyprefs();
 	settingsbtn.addEventListener("click",opensettings);
+	settingsclose.innerHTML=iconsvg("close");
 	settingsclose.addEventListener("click",closesettings);
 	settingsbackdrop.addEventListener("click",closesettings);
 	window.addEventListener("resize",applysizes);
