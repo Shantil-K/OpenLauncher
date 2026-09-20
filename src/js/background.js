@@ -54,6 +54,7 @@ let applehttp=false;
 const APPLE_HTTPS=/^https:\/\/sylvan\.apple\.com\//;
 // access/wallpaper/loop.mp4 is one still per wallpaper, this many seconds each (SECS in scripts/make-wallpaper-video.sh)
 const LOCAL_SEGMENT_SECONDS=20;
+const LOOP_EARLY_SECONDS=0.3;         // jump back this long before the end of a repeated built-in wallpaper (timeupdate is not exact)
 
 function shuffled(list) {
 	const copy=list.slice();
@@ -64,9 +65,46 @@ function shuffled(list) {
 	return copy;
 }
 
+// ---- looping the video that is playing (the Loop button of the info card)
+let bgloop=false;         // repeat this video instead of moving on to the next one
+let bgloopstart=0;        // built-in loop only: where the wallpaper being repeated starts
+
+function loopable() {
+	return bgmode==="aerials" || bgmode==="local" || (bgmode==="custom" && customcurrent!==null && customcurrent.kind==="video");
+}
+
+function islooping() {
+	return bgloop && loopable();
+}
+
+// streamed and custom videos repeat natively (`loop`, so `ended` never fires); the built-in file is many wallpapers one after
+// another, so there "this video" is the wallpaper playing now and we jump back to its start
+function setloop(on) {
+	if(on && !loopable()){ return; }
+	bgloop=on;
+	if(bgmode==="local"){
+		bgloopstart=Math.floor(bgvideo.currentTime/LOCAL_SEGMENT_SECONDS)*LOCAL_SEGMENT_SECONDS;
+	} else {
+		bgvideo.loop=on;
+	}
+}
+
+// a different video is starting: the loop was for the one before it
+function resetloop() {
+	bgloop=false;
+	if(bgmode!=="local"){ bgvideo.loop=false; }
+}
+
+function loopbackcheck() {
+	if(!(bgmode==="local" && bgloop && isFinite(bgvideo.duration))){ return; }
+	const end=Math.min(bgloopstart+LOCAL_SEGMENT_SECONDS,bgvideo.duration);
+	if(bgvideo.currentTime>=end-LOOP_EARLY_SECONDS || bgvideo.currentTime<bgloopstart-0.5){ bgvideo.currentTime=bgloopstart; }
+}
+
 // ---- online: aerials.js
 function loadaerial(entry) {
 	bglasttime=-1;
+	bgloop=false;
 	bgvideo.loop=false;
 	bgvideo.src=applehttp?entry.u.replace(APPLE_HTTPS,"http://sylvan.apple.com/"):entry.u;
 	bgvideo.play().catch(()=>{});
@@ -93,6 +131,7 @@ function startlocalvideo() {
 	stopimagewallpapers();
 	stopcustom();
 	bgmode="local";
+	bgloop=false;
 	bgvideo.loop=true;
 	bgvideo.src="access/wallpaper/loop.mp4";
 	bgvideo.play().catch(()=>{});
@@ -166,6 +205,7 @@ function nextcustom() {
 	}
 	const url=customqueue.pop();
 	customcurrent={u:url,n:customname(url),kind:customkind(url)};
+	bgloop=false;
 	if(customcurrent.kind==="video"){
 		maindiv.style="";
 		bgvideo.style.display="";
@@ -247,6 +287,7 @@ function nowplaying() {
 }
 
 function skipvideo() {
+	resetloop();       // skipping means moving on
 	if(bgmode==="aerials"){
 		nextaerial();
 	} else if(bgmode==="custom"){
@@ -283,6 +324,7 @@ function bgfailed() {
 function startbackground() {
 	bgvideo.onerror=bgfailed;
 	bgvideo.onplaying=() => {bgerrors=0;};
+	bgvideo.ontimeupdate=loopbackcheck;
 	bgvideo.onended=() => {
 		if(bgmode==="aerials"){ nextaerial(); } else if(bgmode==="custom"){ nextcustom(); }
 	};
@@ -348,7 +390,7 @@ function renderwallpaperlist(box) {
 		if(event.keyCode===13){ addcustomwallpaper(); }
 	});
 	line.appendChild(input);
-	line.appendChild(optionbutton("Add",false,() => addcustomwallpaper()));
+	line.appendChild(optionbutton("Add",false,() => addcustomwallpaper(),"add"));
 	box.appendChild(line);
 	if(wallpaperstatus){ box.appendChild(el("div","sstatus",wallpaperstatus)); }
 	if(prefs.customUrls.length===0){

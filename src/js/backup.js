@@ -56,7 +56,9 @@ function parsebackup(text){
 			hidden:cleanstrings(saved.hidden) || [],
 			order:cleanstrings(saved.order) || [],
 			folders:folders,
-			appfolder:appfolder
+			appfolder:appfolder,
+			sysplaced:cleanstrings(saved.sysplaced) || [],
+			sysdismissed:cleanstrings(saved.sysdismissed) || []
 		}
 	};
 }
@@ -69,6 +71,8 @@ function applybackup(parsed){
 	settings.order=parsed.layout.order;
 	settings.folders=parsed.layout.folders;
 	settings.appfolder=parsed.layout.appfolder;
+	settings.sysplaced=parsed.layout.sysplaced;
+	settings.sysdismissed=parsed.layout.sysdismissed;
 	savesettings();
 	applyprefs();
 	render();
@@ -128,7 +132,7 @@ function importbackup(){
 // the Backup tab's row (see the "custom" item type in settings.js)
 function renderbackup(box,item){
 	const buttons=el("div","scontrol");
-	buttons.appendChild(optionbutton("Export",false,() => exportbackup()));
+	buttons.appendChild(optionbutton("Export",false,() => exportbackup(),"download"));
 	if(confirming===item){
 		buttons.appendChild(el("span","sconfirm","Replace all current settings?"));
 		const yes=optionbutton("Yes, replace",false,() => importbackup());
@@ -142,10 +146,10 @@ function renderbackup(box,item){
 		buttons.appendChild(optionbutton("Import",false,() => {
 			confirming=item;
 			renderpane();
-		}));
+		},"upload"));
 	}
 	if(rooted){
-		buttons.appendChild(optionbutton("Load file",false,() => loadbackupfile()));
+		buttons.appendChild(optionbutton("Load file",false,() => loadbackupfile(),"open"));
 	}
 	box.appendChild(buttons);
 	const area=el("textarea","sarea");

@@ -1,6 +1,6 @@
 //SPDX-License-Identifier: WTFNMFPL
 // The info button on the home screen and the "Now playing" card it opens: name and source of the wallpaper video,
-// a seekbar you can drag, and Skip. What is playing comes from nowplaying() / skipvideo() in main.js.
+// a seekbar you can drag, Loop (repeat this video) and Skip. What is playing comes from nowplaying() / skipvideo() in main.js.
 
 let infotimer=null;
 let infoseeking=false;
@@ -15,6 +15,10 @@ function updateinfo(){
 	infoname.textContent=playing.name;
 	infosource.textContent=playing.source;
 	infoseekrow.style.display=playing.video?"":"none";
+	infoloop.style.display=playing.video?"":"none";
+	const looping=islooping();
+	infoloop.classList.toggle("on",looping);
+	infoloop.setAttribute("aria-pressed",looping?"true":"false");
 	if(!playing.video){ return; }
 	const duration=bgvideo.duration;
 	const known=isFinite(duration) && duration>0;
@@ -47,6 +51,11 @@ function closeinfo(){
 function initinfo(){
 	infobtn.innerHTML=iconsvg("info");
 	infoskip.innerHTML=iconsvg("skip")+"<span>Skip video</span>";
+	infoloop.innerHTML=iconsvg("loop")+"<span>Loop video</span>";
+	infoloop.addEventListener("click",() => {
+		setloop(!islooping());
+		updateinfo();
+	});
 	infobtn.addEventListener("click",() => {
 		if(infoisopen()){ closeinfo(); } else { openinfo(); }
 	});

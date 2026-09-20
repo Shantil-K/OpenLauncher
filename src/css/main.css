@@ -42,7 +42,7 @@
 	overflow-y: overlay !important;
     overflow-y: scroll;
     scrollbar-gutter: stable;
-        background-color: rgb(0 0 0 / 50%);
+        background-color: rgba(0, 0, 0, var(--menuopacity, 0.5));
 	position: absolute;
 	top: 1vh;
     left: 1vw;
@@ -120,6 +120,9 @@ html,body {
 }
 
 .appitem:hover { background-color: rgba(var(--accent), 0.5); }
+/* a name that doesn't fit slides sideways while its tile is hovered or focused (main.js, marqueeupdate) */
+.appname.marquee { text-overflow: clip; animation: appname-scroll 4s ease-in-out infinite alternate; }
+@keyframes appname-scroll { 0%, 20% { text-indent: 0; } 80%, 100% { text-indent: var(--marquee, 0px); } }
 
 #realappbarbtu:not(:checked) ~ #appluncher {
 /* Hack : make appluncher always loaded so it can be faster when i open/close it */
@@ -131,6 +134,8 @@ z-index:9999;
 
 
 }
+/* the menu is see-through, so the clock, date and weather must not show behind it */
+#realappbarbtu:checked ~ .layer { visibility: hidden; }
 
 #drawertools {
 	display: none;
@@ -181,6 +186,7 @@ z-index:9999;
 }
 .appctl button.wide { grid-column: 1 / -1; }
 .appctl button:hover { background-color: rgba(var(--accent), 0.7); }
+.appctl button.dangerctl:hover { background-color: rgba(255, 90, 90, 0.85); }
 /* rest the pointer here to pick the app up: the pink fill is the countdown (keep the .875s in step with PICKUP_MS) */
 .movezone {
 	grid-column: 1 / -1;
@@ -326,10 +332,10 @@ z-index:9999;
 #settingspanel {
 	display: none;
 	position: fixed;
-	top: 10vh;
-	left: 14vw;
-	width: 72vw;
-	height: 80vh;
+	top: 8vh;
+	left: 9vw;
+	width: 82vw;
+	height: 84vh;
 	z-index: 20001;
 	flex-direction: column;
 	overflow: hidden;
@@ -360,11 +366,11 @@ z-index:9999;
 	display: flex;
 	flex-direction: column;
 	gap: 1vh;
-	width: 16vw;
-	padding: 2vh 1.2vw;
+	width: 14vw;
+	padding: 2vh 1vw;
 	border-right: 1px solid rgba(255,255,255,0.2);
 }
-.stab { font-size: 2.4vh; padding: 1.4vh 1vw; text-align: left; border-radius: 0.8vh; }
+.stab { display: flex; align-items: center; gap: 0.8vw; font-size: 2.4vh; padding: 1.4vh 1vw; text-align: left; border-radius: 0.8vh; }
 .stab.on, .sopt.on { color: rgb(0,0,0); background-color: rgb(var(--accent)); border-color: rgb(var(--accent)); }
 #settingspane { flex: 1; overflow-y: auto; padding: 1vh 2vw; scrollbar-width: none; }
 .srow {
@@ -375,19 +381,99 @@ z-index:9999;
 	padding: 1.6vh 0;
 	border-bottom: 1px solid rgba(255,255,255,0.1);
 }
-.slabel { flex: 0 0 12vw; }
-.slabeltext { display: block; font-size: 2.4vh; }
-.shint { display: block; margin-top: 0.4vh; font-size: 1.5vh; opacity: 0.65; }
+.slabel { flex: 0 0 12vw; display: flex; align-items: center; gap: 0.6vw; }
+.slabeltext { font-size: 2.4vh; }
+.shintmark { display: block; flex: 0 0 auto; width: 2.2vh; height: 2.2vh; opacity: 0.5; }
+.shintmark svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+.srow:hover .shintmark, .srow:focus-within .shintmark { opacity: 1; color: rgb(var(--accent)); }
 .scontrol { flex: 1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.8vh 0.6vw; }
 .sopt { font-size: 2vh; padding: 1vh 1.2vw; border-radius: 0.8vh; }
 .swatch { width: 4.4vh; height: 4.4vh; padding: 0; border-radius: 50%; border: 3px solid rgba(255,255,255,0.35); }
 .swatch.on { border-color: rgb(255,255,255); box-shadow: 0 0 0 3px rgb(0,0,0), 0 0 0 5px rgb(255,255,255); }
 .pospicker { display: flex; align-items: center; gap: 1.2vw; }
-.posgrid { display: grid; grid-template-columns: repeat(3, 4.2vh); grid-template-rows: repeat(3, 3vh); gap: 0.6vh; padding: 0.8vh; background-color: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.4); border-radius: 0.8vh; }
+.posgrid { display: grid; grid-template-columns: repeat(3, 5vh); grid-template-rows: repeat(3, 2.8vh); gap: 0.6vh; padding: 0.8vh; background-color: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.4); border-radius: 0.8vh; }
 .poscell { padding: 0; border-radius: 0.5vh; }
 .poscell.on { background-color: rgb(var(--accent)); border-color: rgb(var(--accent)); }
 #settingsclose:hover, .sopt:hover, .stab:hover, .poscell:hover, .swatch:hover { background-color: rgba(var(--accent), 0.45); }
 .stab.on:hover, .sopt.on:hover, .poscell.on:hover { background-color: rgb(var(--accent)); }
+.sheading { margin-top: 2.4vh; padding-bottom: 0.6vh; font-size: 1.8vh; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(var(--accent)); border-bottom: 1px solid rgba(var(--accent), 0.5); }
+.sheading:first-child { margin-top: 0.6vh; }
+#settingspanel, #settingsbackdrop { transition: opacity 0.25s ease; }
+#maindiv.peek #settingspanel { opacity: 0.06; }
+#maindiv.peek #settingsbackdrop { opacity: 0.25; }
+/* icons in buttons and tabs; the icon comes first even though the label is the button's own text */
+.sicon { display: block; order: -1; flex: 0 0 auto; width: 3vh; height: 3vh; }
+.sicon svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+.sopt.withicon { display: flex; align-items: center; gap: 0.6vw; }
+.sopt.withicon .sicon { width: 2.6vh; height: 2.6vh; }
+.sopt.card { flex-direction: column; justify-content: center; gap: 0.6vh; width: 9vw; padding: 1.6vh 0.8vw; font-size: 2vh; }
+.sopt.card .sicon { width: 5vh; height: 5vh; }
+.sopt.compact { min-width: 4.2vw; padding: 1vh 0.8vw; text-align: center; }
+/* On/Off is a switch */
+.sswitch { position: relative; width: 7vh; height: 3.8vh; padding: 0; border-radius: 3vh; font-family: inherit; color: rgb(255,255,255); background-color: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.45); transition: background-color 0.15s ease; }
+.sknob { position: absolute; top: 0.4vh; left: 0.5vh; width: 2.8vh; height: 2.8vh; border-radius: 50%; background-color: rgb(255,255,255); transition: transform 0.15s ease; }
+.sswitch.on { background-color: rgb(var(--accent)); border-color: rgb(var(--accent)); }
+.sswitch.on .sknob { transform: translateX(3.2vh); background-color: rgb(0,0,0); }
+.sswitch:hover { border-color: rgb(var(--accent)); }
+/* < value > */
+.sicononly { display: flex; align-items: center; justify-content: center; width: 5.4vh; height: 5.4vh; padding: 1vh; }
+.sicononly svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+.sicononly.flip svg { transform: scaleX(-1); }
+.sstepvalue { min-width: 12vw; align-self: center; text-align: center; font-size: 2.2vh; }
+/* the explanation of the row that has the focus */
+#settingshint { display: flex; align-items: center; gap: 0.8vw; min-height: 5.6vh; padding: 0 2vw; font-size: 1.9vh; color: rgba(255,255,255,0.85); border-top: 1px solid rgba(255,255,255,0.2); opacity: 0; transition: opacity 0.2s ease; }
+#settingshint.on { opacity: 1; }
+#settingshint { border-top-color: transparent; }
+#settingshint.on { border-top-color: rgba(255,255,255,0.2); }
+#settingshinticon { flex: 0 0 auto; width: 2.6vh; height: 2.6vh; color: rgb(var(--accent)); }
+#settingshinticon svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+/* live preview */
+#settingspreview { display: none; flex: 0 0 24vw; padding: 2vh 1.4vw 2vh 0; overflow: hidden; }
+#settingspreview.on { display: block; }
+.pvtiles { display: flex; flex-direction: column; gap: 1.6vh; }
+.pvscreen { --pv: 0.22; position: relative; width: 100%; height: 0; padding-top: 56.25%; overflow: hidden; border-radius: 0.8vh; border: 1px solid rgba(255,255,255,0.3); background: linear-gradient(160deg, #46587a, #161c2a 70%); color: rgb(255,255,255); text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+.pvscreen > * { position: absolute; }
+.pvlayer { top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; padding: 4%; box-sizing: border-box; }
+.pvlayer[data-v="top"] { justify-content: flex-start; }
+.pvlayer[data-v="center"] { justify-content: center; }
+.pvlayer[data-v="bottom"] { justify-content: flex-end; padding-bottom: calc(var(--barh) * var(--pv) + 4%); }
+.pvlayer[data-h="left"] { align-items: flex-start; text-align: left; }
+.pvlayer[data-h="center"] { align-items: center; text-align: center; }
+.pvlayer[data-h="right"] { align-items: flex-end; text-align: right; }
+.pvscreen.hasrecent .pvlayer[data-v="bottom"] { padding-bottom: calc((var(--barh) + var(--recenth)) * var(--pv) + 4%); }
+.pvtime { font-size: calc(15vh * var(--pv)); line-height: 1.05; white-space: nowrap; }
+.pvtime.stacked { font-size: calc(19vh * var(--pv)); line-height: 0.95; }
+.pvtime.stacked span, .pvtime.stacked small { display: block; }
+.pvtime.stacked small { font-size: 0.4em; }
+.pvdate, .pvweather { font-size: calc(5vh * var(--pv)); white-space: nowrap; margin-top: 0.3em; }
+.pvweather { display: flex; align-items: center; gap: 0.3em; font-size: calc(7vh * var(--pv)); }
+.pvweathericon { display: block; width: 1.3em; height: 1.3em; }
+.pvweathericon svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+.pvanalog { width: calc(30vh * var(--pv)); height: calc(30vh * var(--pv)); }
+.pvanalog svg { display: block; width: 100%; height: 100%; }
+.pvface { fill: rgba(0,0,0,0.35); stroke: rgba(255,255,255,0.9); stroke-width: 4; }
+.pvmarks line { stroke: rgb(255,255,255); stroke-width: 5; stroke-linecap: round; }
+.pvhand { stroke: rgb(255,255,255); stroke-width: 9; stroke-linecap: round; }
+.pvhand.thin { stroke-width: 6; }
+.pvsecond { stroke: rgb(var(--accent)); stroke-width: 3; stroke-linecap: round; }
+.pvhub { fill: rgb(255,255,255); }
+.pvscreen > .pvbar, .pvscreen > .pvbars { left: 0; right: 0; bottom: 0; }
+.pvbar { display: flex; align-items: flex-start; padding: 0 2%; box-sizing: border-box; }
+.pvbars { display: flex; flex-direction: column; }
+.pvbars .pvrecent { padding-bottom: 1%; }
+.pvtile { --t: var(--bartile); --n: var(--barname); flex: 0 0 auto; width: calc(var(--t) * var(--pv)); margin-right: calc(var(--t) * var(--pv) * 0.18); padding-bottom: 0.4vh; }
+.pvicon { display: block; height: calc(var(--t) * var(--pv)); border-radius: 22%; background: rgba(255,255,255,0.78); }
+.pvname { display: block; width: 70%; height: calc(var(--n) * var(--pv) * 0.9); min-height: 2px; margin: calc(var(--n) * var(--pv) * 0.6) auto 0; border-radius: 99px; background: rgba(255,255,255,0.7); }
+.pvtile.hot .pvicon { box-shadow: 0 0 0 calc(var(--t) * var(--pv) * 0.09) rgb(var(--accent)); }
+.pvmenu { background: linear-gradient(135deg, #e9b866, #5b8fd6 55%, #2f6b4c); }
+.pvgrid { --t: var(--menutile); --n: var(--menuname); top: 2%; left: 1%; right: 1%; bottom: 2%; padding: 3% 3% 0; box-sizing: border-box; overflow: hidden; border-radius: 4px; background: rgba(0,0,0,var(--menuopacity, 0.5)); display: flex; flex-wrap: wrap; align-content: flex-start; }
+.pvgrid .pvtile { --t: var(--menutile); --n: var(--menuname); margin-bottom: calc(var(--menutile) * var(--pv) * 0.2); }
+.pvsmall { padding-top: 32%; }
+.sslider { display: flex; align-items: center; justify-content: flex-end; flex: 1; min-width: 0; gap: 1vw; }
+.srange { --fill: 0%; flex: 1 1 auto; min-width: 6vw; max-width: 20vw; height: 1vh; margin: 0; border-radius: 0.5vh; outline: none; -webkit-appearance: none; background: linear-gradient(to right, rgb(var(--accent)) var(--fill), rgba(255,255,255,0.3) var(--fill)); }
+.srange::-webkit-slider-thumb { -webkit-appearance: none; width: 2.8vh; height: 2.8vh; border-radius: 50%; background: rgb(var(--accent)); border: 2px solid rgb(255,255,255); }
+.srange.dfocus { outline-offset: 1vh; }
+.ssliderval { flex: 0 0 auto; min-width: 4vw; text-align: right; font-size: 2.2vh; font-variant-numeric: tabular-nums; }
 .sconfirm { align-self: center; margin-right: 0.6vw; font-size: 2.2vh; }
 .sopt.danger { background-color: rgba(255,90,90,0.35); border-color: rgb(255,90,90); }
 .sopt.danger:hover { background-color: rgb(255,90,90); color: rgb(0,0,0); }
@@ -428,7 +514,7 @@ z-index:9999;
 #maindiv.infoopen #infocard { display: block; }
 #realappbarbtu:checked ~ #infocard { display: none; }
 #infohead { display: flex; align-items: center; justify-content: space-between; font-size: 1.8vh; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.85; }
-#infoclose, #infoskip {
+#infoclose, #infoskip, #infoloop {
 	font-family: inherit;
 	color: rgb(255,255,255);
 	background-color: rgba(255,255,255,0.1);
@@ -461,10 +547,11 @@ z-index:9999;
 	border: 2px solid rgb(255,255,255);
 }
 #infoseekbar:disabled { opacity: 0.5; }
-#infoactions { margin-top: 2.4vh; }
-#infoskip { display: flex; align-items: center; gap: 0.6vw; font-size: 2vh; padding: 1vh 1.4vw; }
-#infoskip svg { display: block; width: 3vh; height: 3vh; fill: currentColor; }
-#infoskip:hover, #infoclose:hover { background-color: rgba(var(--accent), 0.45); }
+#infoactions { display: flex; gap: 1vw; margin-top: 2.4vh; }
+#infoloop, #infoskip { display: flex; align-items: center; gap: 0.6vw; font-size: 2vh; padding: 1vh 1.4vw; }
+#infoloop svg, #infoskip svg { display: block; width: 3vh; height: 3vh; fill: currentColor; }
+#infoloop.on, #infoloop.on:hover { color: rgb(0,0,0); background-color: rgb(var(--accent)); border-color: rgb(var(--accent)); }
+#infoloop:hover, #infoskip:hover, #infoclose:hover { background-color: rgba(var(--accent), 0.45); }
 
 /* rows that draw their own controls (backup, lists, text boxes): control under the label, full width */
 .srow.wide { flex-direction: column; align-items: stretch; gap: 1.2vh; }
@@ -481,6 +568,8 @@ z-index:9999;
 	box-sizing: border-box;
 }
 .stext { flex: 1; min-width: 20vw; }
+.srow.wide .scontrol > .scontrol { flex: 1 1 100%; flex-wrap: nowrap; }
+.srow.wide .stext { min-width: 0; }
 .sarea { width: 100%; height: 16vh; resize: none; font-size: 1.6vh; }
 .sstatus { align-self: center; font-size: 1.8vh; opacity: 0.85; }
 
@@ -498,11 +587,11 @@ z-index:9999;
 }
 #maindiv.has-recent #recentrow { display: grid; }
 #realappbarbtu:checked ~ #recentrow { display: none !important; }
+/* the first row of the grid, starting where the first tile does (10px is the tile's own padding, so the text lines up with the icon) */
 #recentlabel {
-	position: absolute;
-	left: 0;
-	top: -3vh;
-	margin: 0;
+	grid-column: 1 / -1;
+	justify-self: start;
+	margin: 0 0 0.6vh 10px;
 	font-size: 1.6vh;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
@@ -541,7 +630,24 @@ z-index:9999;
 
 /* folders in the app drawer */
 .foldericon { position: relative; width: 100%; height: 0; padding-top: 100%; background-color: rgba(255,255,255,0.14); border-radius: 1vh; }
-.foldericon svg { position: absolute; top: 14%; left: 14%; width: 72%; height: 72%; fill: rgb(255,255,255); }
+.foldericon svg { position: absolute; top: 14%; left: 14%; width: 72%; height: 72%; fill: rgb(255,255,255); opacity: 0.85; }
+/* a folder tile shows a 2x2 peek at its apps */
+.foldermini { position: absolute; top: 9%; left: 9%; right: 9%; bottom: 9%; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6%; }
+.foldermini img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 14%; background-color: rgba(255,255,255,0.75); }
+.folderempty { grid-column: 1 / -1; margin: 2vh 0; font-size: 2.2vh; text-align: center; color: rgba(255,255,255,0.75); }
+/* the bar above the drawer: All apps and one chip per folder */
+#folderbar { display: none; position: absolute; top: 1vh; left: 1vw; width: calc(100vw - 2vw); height: 7vh; box-sizing: border-box; z-index: 9999; align-items: center; gap: 0.8vw; padding: 0 2vw; overflow-x: auto; scrollbar-width: none; background-color: rgba(0, 0, 0, var(--menuopacity, 0.5)); }
+#folderbar::-webkit-scrollbar { display: none; }
+#maindiv.hasfolders #folderbar { display: flex; }
+#realappbarbtu:not(:checked) ~ #folderbar { display: none !important; }
+#maindiv.hasfolders #appluncher { top: 8vh; height: calc(100vh - var(--barh) - 7vh); }
+.chip { display: flex; align-items: center; flex: 0 0 auto; gap: 0.6vw; padding: 0.8vh 1.3vw; font-family: inherit; font-size: 2.1vh; white-space: nowrap; color: rgb(255,255,255); background-color: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.35); border-radius: 99px; }
+.chip:hover { background-color: rgba(var(--accent), 0.45); }
+.chip.on, .chip.on:hover { color: rgb(0,0,0); background-color: rgb(var(--accent)); border-color: rgb(var(--accent)); }
+.chipicon { display: block; width: 2.6vh; height: 2.6vh; }
+.chipicon svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+.chipcount { font-size: 1.7vh; opacity: 0.7; }
+.chipcount:empty { display: none; }
 #maindiv.editing .foldertile .appctl { display: none !important; }
 
 /* "Move to folder" picker */
@@ -549,10 +655,10 @@ z-index:9999;
 #folderpicker {
 	display: none;
 	position: fixed;
-	top: 20vh;
-	left: 33vw;
-	width: 34vw;
-	max-height: 60vh;
+	top: 12vh;
+	left: 25vw;
+	width: 50vw;
+	max-height: 76vh;
 	overflow-y: auto;
 	box-sizing: border-box;
 	padding: 2vh 1.6vw;
@@ -565,13 +671,32 @@ z-index:9999;
 }
 #maindiv.pickeropen #folderbackdrop { display: block; }
 #maindiv.pickeropen #folderpicker { display: block; }
-#folderhead { display: flex; align-items: center; justify-content: space-between; font-size: 2.6vh; margin-bottom: 1.6vh; }
+#folderhead { display: flex; align-items: center; gap: 1.2vw; margin-bottom: 2vh; }
+#folderappicon { flex: 0 0 auto; width: 6.4vh; height: 6.4vh; object-fit: cover; border-radius: 1vh; background-color: rgba(255,255,255,0.75); }
+#folderheadtext { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#folderapp { font-size: 2.8vh; overflow-wrap: anywhere; }
+#foldercurrent { margin-top: 0.3vh; font-size: 1.8vh; opacity: 0.7; }
 #folderclose { width: 4.4vh; height: 4.4vh; padding: 0.7vh; font-family: inherit; color: rgb(255,255,255); background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); border-radius: 0.8vh; }
 #folderclose svg { display: block; width: 100%; height: 100%; fill: currentColor; }
 #folderclose:hover { background-color: rgba(var(--accent), 0.45); }
-#folderlist { display: flex; flex-direction: column; gap: 0.8vh; }
-#folderlist .sopt { text-align: left; }
-#foldernew { display: flex; gap: 0.8vw; margin-top: 2vh; }
+/* one card per place the app can go */
+#folderlist { display: grid; grid-template-columns: 1fr 1fr; gap: 1vh 0.8vw; }
+.foldercard { display: flex; align-items: center; gap: 0.8vw; min-width: 0; padding: 1vh 1vw; text-align: left; font-size: 2.1vh; overflow-wrap: anywhere; }
+.cardpicture { display: block; order: -1; flex: 0 0 auto; position: relative; width: 6vh; height: 6vh; border-radius: 1vh; background-color: rgba(255,255,255,0.14); }
+.cardpicture > svg { position: absolute; top: 15%; left: 15%; width: 70%; height: 70%; fill: currentColor; }
+.foldercard.on .cardpicture { background-color: rgba(0,0,0,0.2); }
+.cardnote { order: 1; margin-left: auto; flex: 0 0 auto; font-size: 1.6vh; opacity: 0.7; white-space: nowrap; }
+.cardtick { display: block; order: 2; flex: 0 0 auto; width: 2.6vh; height: 2.6vh; }
+.cardtick svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+/* making a new folder */
+#foldermake { display: flex; align-items: center; flex-wrap: wrap; gap: 0.8vh 1vw; margin-top: 2.2vh; }
+#foldermakelabel { font-size: 1.7vh; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+#foldersuggest { display: flex; flex-wrap: wrap; gap: 0.8vh 0.6vw; }
+#movetoast { position: fixed; bottom: 14vh; left: 50%; max-width: 70vw; z-index: 30000; padding: 1.4vh 2vw; font-size: 2.2vh; text-align: center; color: rgb(255,255,255); background-color: rgba(18,18,24,0.97); border: 2px solid rgba(var(--accent), 0.85); border-radius: 1.6vh; opacity: 0; transform: translate(-50%, 1.5vh); pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; }
+#movetoast.on { opacity: 1; transform: translate(-50%, 0); }
+#foldernew { display: none; gap: 0.8vw; margin-top: 1.4vh; }
+#maindiv.naming #foldernew { display: flex; }
+#foldernew .stext { flex: 1; min-width: 0; }
 #foldermessage { margin-top: 1vh; min-height: 2vh; }
 .listinput { flex: 1; min-width: 0; }
 
@@ -599,3 +724,4 @@ z-index:9999;
 #appmenutitle { font-size: 2.6vh; margin-bottom: 1.6vh; overflow-wrap: anywhere; }
 #appmenulist { display: flex; flex-direction: column; gap: 0.8vh; }
 #appmenulist .sopt { text-align: left; }
+#appmenulist .sopt.danger { margin-top: 1.2vh; }

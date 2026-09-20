@@ -16,8 +16,10 @@
 	<script src="js/lib/QwQwebosTV.js/main.js"></script>  
 <script src="js/clock.js"></script>
 <script src="js/settings.js"></script>
+<script src="js/preview.js"></script>
 <script src="js/backup.js"></script>
 <script src="js/folders.js"></script>
+<script src="js/systemapps.js"></script>
 <script src="js/dpad.js"></script>
 <script src="js/weather.js"></script>
 <script src="js/background.js"></script>
@@ -55,6 +57,7 @@
 	<div id="datelayer" class="layer" data-v="center" data-h="center"></div>
 	<div id="weatherlayer" class="layer" data-v="center" data-h="center" style="display:none"></div>
 	<div id="appluncher"></div>
+	<div id="folderbar"></div>
 	<div id="drawertools">
 		<button id="settingsbtn" title="Settings" aria-label="Settings"><img src="access/gear.svg" alt=""></button>
 		<button id="editbtn">Edit</button>
@@ -69,7 +72,7 @@
 			<input type="range" id="infoseekbar" min="0" max="1000" value="0" step="1">
 			<span id="infotime">0:00 / 0:00</span>
 		</div>
-		<div id="infoactions"><button id="infoskip"></button></div>
+		<div id="infoactions"><button id="infoloop" aria-pressed="false"></button><button id="infoskip"></button></div>
 	</div>
 	<div id="appmenubackdrop"></div>
 	<div id="appmenu">
@@ -78,18 +81,29 @@
 	</div>
 	<div id="folderbackdrop"></div>
 	<div id="folderpicker">
-		<div id="folderhead"><span id="folderapp">Move to folder</span><button id="folderclose" title="Close" aria-label="Close"></button></div>
+		<div id="folderhead">
+			<img id="folderappicon" alt="">
+			<div id="folderheadtext"><span id="folderapp">Move to folder</span><small id="foldercurrent"></small></div>
+			<button id="folderclose" title="Close" aria-label="Close"></button>
+		</div>
 		<div id="folderlist"></div>
-		<div id="foldernew"><input type="text" id="foldernewname" class="stext" placeholder="New folder name"><button id="foldernewbtn" class="sopt">Create</button></div>
+		<div id="foldermake">
+			<span id="foldermakelabel">New folder</span>
+			<div id="foldersuggest"></div>
+		</div>
+		<div id="foldernew"><input type="text" id="foldernewname" class="stext" placeholder="Folder name"><button id="foldernewbtn" class="sopt">Create</button></div>
 		<div id="foldermessage" class="sstatus"></div>
 	</div>
+	<div id="movetoast"></div>
 	<div id="settingsbackdrop"></div>
 	<div id="settingspanel">
 		<div id="settingshead"><span>Settings</span><button id="settingsclose" title="Close" aria-label="Close"></button></div>
 		<div id="settingsbody">
 			<div id="settingstabs"></div>
 			<div id="settingspane"></div>
+			<div id="settingspreview"></div>
 		</div>
+		<div id="settingshint"><span id="settingshinticon"></span><span id="settingshinttext"></span></div>
 	</div>
 	<div id="carryhint">Hover another app to move it there. Rest on it to drop.</div>
 	<div id="recentrow"><p id="recentlabel">Recent</p></div>

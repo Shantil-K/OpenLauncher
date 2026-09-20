@@ -4,7 +4,7 @@
 //
 // Focus is virtual (a class), not DOM focus, except in text boxes: OK on one focuses it so the on-screen keyboard
 // opens, and while typing the keys belong to the text box until Back.
-// In Edit mode OK on an app opens a small menu (pin, hide, folder, reorder); Reorder then moves it with the arrows.
+// In Edit mode OK on an app opens a small menu (hide, folder, reorder, uninstall); Reorder then moves it with the arrows, and moving it into the bottom bar pins it.
 
 const KEY_LEFT=37;
 const KEY_UP=38;
@@ -16,7 +16,7 @@ const KEY_BACK=461;
 const KEY_RED=403;      // info card
 const KEY_YELLOW=405;   // settings
 const KEY_BLUE=406;     // Edit mode
-const SEEK_STEP=20;          // seekbar units (of 1000) per Left/Right press: 2%
+const SEEK_FRACTION=0.02;    // a slider moves 2% of its range per Left/Right press, unless it has its own data-dpadstep
 const MOUSE_SWITCH_PX=10;    // a pointer jitter smaller than this doesn't cancel keyboard mode
 
 let dpadfocus=null;
@@ -88,7 +88,7 @@ function contextelements() {
 	if(settingsisopen()){ return within(settingspanel,"button, input, textarea"); }
 	if(infoisopen()){ return within(infocard,"button, input"); }
 	if(realappbarbtu.checked){
-		return within(appluncher,".appitem").concat([settingsbtn,editbtn].filter(isvisible),within(appbar,".appitem"));
+		return within(folderbar,"button").concat(within(appluncher,".appitem"),[settingsbtn,editbtn].filter(isvisible),within(appbar,".appitem"));
 	}
 	return within(appbar,".appitem").concat(within(recentrow,".appitem"),[infobtn].filter(isvisible));
 }
@@ -106,11 +106,16 @@ function reveal(el) {
 }
 
 function setfocus(el) {
-	if(dpadfocus){ dpadfocus.classList.remove("dfocus"); }
+	if(dpadfocus){
+		dpadfocus.classList.remove("dfocus");
+		marqueefocus(dpadfocus,false);
+	}
 	dpadfocus=el;
 	if(el){
+		marqueefocus(el,true);
 		el.classList.add("dfocus");
 		reveal(el);
+		if(settingsisopen()){ settingsfocused(el); }
 	}
 }
 
@@ -174,26 +179,56 @@ function openappmenu(tile) {
 	const app=applist.filter((each) => each.id===id)[0];
 	appmenutitle.textContent=app?app.title:id;
 	appmenulist.innerHTML="";
-	const add=(label,action) => {
+	const add=(label,action,keepopen) => {
 		const button=el("button","sopt",label);
 		button.addEventListener("click",() => {
-			closeappmenu();
+			if(!keepopen){ closeappmenu(); }
 			action();
 		});
 		appmenulist.appendChild(button);
+		return button;
 	};
-	add(ispinned(id)?"Unpin from the bar":"Pin to the bar",() => togglepin(id));
 	if(!inbar){
 		add(ishidden(id)?"Show":"Hide",() => togglehide(id));
 		add("Move to folder...",() => openfolderpicker(id));
 	}
 	add("Reorder",() => {
 		startcarry(id,inbar);
-		carryhint.textContent="Arrow keys move it. OK drops it.";
+		carryhint.textContent=inbar?"Arrow keys move it. Up out of the bar unpins it. OK drops it.":"Arrow keys move it. Down past the last row pins it to the bar. OK drops it.";
 		setfocus(tile);
 	});
+	if(canuninstall(app)){
+		add("Uninstall...",() => askuninstall(tile,id,app),true).classList.add("danger");
+	}
 	maindiv.classList.add("menuopen");
 	setfocus(within(appmenu,"button")[0] || null);
+}
+
+// the tile's own Uninstall button (pointer): straight to the question, and Cancel just closes it
+function openuninstallquestion(tile) {
+	const id=tile.getAttribute("data-appid");
+	const app=applist.filter((each) => each.id===id)[0];
+	if(!canuninstall(app)){ return; }
+	returnto=tile;
+	maindiv.classList.add("menuopen");
+	askuninstall(tile,id,app,true);
+}
+
+// "Uninstall..." asks first; the focus starts on Cancel so a stray OK does no harm
+function askuninstall(tile,id,app,direct) {
+	appmenutitle.textContent="Uninstall "+app.title+"?";
+	appmenulist.innerHTML="";
+	const cancel=el("button","sopt","Cancel");
+	cancel.addEventListener("click",() => { if(direct){ closeappmenu(); } else { openappmenu(tile); } });
+	const yes=el("button","sopt","Yes, uninstall");
+	yes.classList.add("danger");
+	yes.addEventListener("click",() => {
+		closeappmenu();
+		uninstallapp(id);
+	});
+	appmenulist.appendChild(cancel);
+	appmenulist.appendChild(yes);
+	setfocus(cancel);
 }
 
 // ---- carrying an app: arrows move it
@@ -208,7 +243,13 @@ function movecarriedbykey(key) {
 	const box=carrying.inbar?appbar:appluncher;
 	const others=within(box,".appitem").filter((each) => each!==tile && each.getAttribute("data-appid"));
 	const index=pickneighbor(tile.getBoundingClientRect(),others.map((each) => each.getBoundingClientRect()),key);
-	if(index!==-1){ movecarried(others[index].getAttribute("data-appid")); }
+	if(index!==-1){
+		movecarried(others[index].getAttribute("data-appid"));
+	} else if(!carrying.inbar && key===KEY_DOWN){
+		pincarried(null);
+	} else if(carrying.inbar && key===KEY_UP){
+		unpincarried();
+	}
 	const moved=carriedtile();      // the same tile object, in its new place
 	if(moved){ setfocus(moved); }
 }
@@ -244,7 +285,7 @@ function activate(el) {
 	lastactivation=el.classList.contains("foldertile")?null:{context:contextname(),index:contextelements().indexOf(el)};
 	if(istextbox(el)){
 		el.focus();
-	} else if(editing && el.classList.contains("appitem") && el.getAttribute("data-appid")){
+	} else if(editing && el.classList.contains("appitem") && !el.classList.contains("recenttile") && el.getAttribute("data-appid")){
 		openappmenu(el);
 	} else {
 		el.click();
@@ -306,8 +347,15 @@ function onkey(event) {
 		return;
 	}
 	if(dpadfocus.tagName==="INPUT" && dpadfocus.type==="range" && (code===KEY_LEFT || code===KEY_RIGHT)){
-		const step=code===KEY_RIGHT?SEEK_STEP:-SEEK_STEP;
-		dpadfocus.value=Math.max(0,Math.min(1000,Number(dpadfocus.value)+step));
+		const number=(name,fallback) => {
+			const value=parseFloat(dpadfocus.getAttribute(name));
+			return isNaN(value)?fallback:value;
+		};
+		const low=number("min",0);
+		const high=number("max",100);
+		const own=number("data-dpadstep",0);
+		const unit=own>0?own:(high-low)*SEEK_FRACTION;
+		dpadfocus.value=Math.max(low,Math.min(high,Number(dpadfocus.value)+(code===KEY_RIGHT?unit:-unit)));
 		dpadfocus.dispatchEvent(new Event("input"));
 		return;
 	}
