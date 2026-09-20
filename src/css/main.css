@@ -395,17 +395,17 @@ z-index:9999;
 	bottom: 4vh;
 	right: 2vw;
 	z-index: 10000;
-	width: 5.6vh;
-	height: 5.6vh;
-	padding: 0.7vh;
+	width: 6vh;
+	height: 6vh;
+	padding: 0.4vh;
 	box-sizing: border-box;
-	color: rgba(255,255,255,0.9);
-	background-color: rgba(0,0,0,0.45);
-	border: 2px solid rgba(255,255,255,0.7);
-	border-radius: 50%;
+	color: rgb(255,255,255);
+	background: none;
+	border: none;
+	border-radius: 0.8vh;
 }
-#infobtn svg { display: block; width: 100%; height: 100%; fill: currentColor; }
-#infobtn:hover { background-color: rgba(var(--accent), 0.6); }
+#infobtn svg { display: block; width: 100%; height: 100%; fill: currentColor; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
+#infobtn:hover { background-color: rgba(var(--accent), 0.5); }
 #realappbarbtu:checked ~ #infobtn { display: none; }
 
 #infocard {
