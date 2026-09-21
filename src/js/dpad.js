@@ -200,7 +200,7 @@ function openappmenu(tile) {
 	}
 	add("Reorder",() => {
 		startcarry(id,inbar);
-		carryhint.textContent=inbar?"Arrow keys move it. Up out of the bar unpins it. OK drops it.":"Arrow keys move it. Down past the last row pins it to the bar. OK drops it.";
+		carryhint.textContent=inbar?"Arrow keys move it along the bar. OK drops it.":"Arrow keys move it. Down past the last row pins it to the bar. OK drops it.";
 		setfocus(tile);
 	});
 	if(canuninstall(app)){
@@ -253,8 +253,6 @@ function movecarriedbykey(key) {
 		movecarried(others[index].getAttribute("data-appid"));
 	} else if(!carrying.inbar && key===KEY_DOWN){
 		pincarried(null);
-	} else if(carrying.inbar && key===KEY_UP){
-		unpincarried();
 	}
 	const moved=carriedtile();      // the same tile object, in its new place
 	if(moved){ setfocus(moved); }

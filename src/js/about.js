@@ -4,7 +4,7 @@
 // wallpaper, the screen, the TV, and the GitHub project. Some facts need the TV (model, firmware) or root (the backup file),
 // or the internet (the latest release, only when you press Check for updates); those say so when they are not available.
 
-const APP_RELEASE="0.7.0-beta";       // the GitHub release this build belongs to; change it with each release
+const APP_RELEASE="0.7.1-beta";       // the GitHub release this build belongs to; change it with each release
 const GITHUB_REPO="TharaBhaiDoraemon/OpenLauncher";
 const GITHUB_API="https://api.github.com/repos/"+GITHUB_REPO+"/releases?per_page=1";   // per_page=1 of ALL releases: "latest" skips pre-releases
 const LAST_BACKUP_KEY='openlauncher.lastbackup';
@@ -41,6 +41,24 @@ function aboutengine() {
 	return match?"Chromium "+match[1]:"Unknown";
 }
 
+// What the screen really has. A web app on a webOS TV can be drawn at 1920 x 1080 (sometimes with a pixel ratio of 2, sometimes
+// scaled up by the TV), so the page size alone says "1080p" on a 4K TV. The panel is the biggest of: the page size times the
+// pixel ratio, the screen size the browser reports, the size webOS reports (deviceInfo), and 4K when the TV says it is a UHD set.
+function aboutresolution() {
+	const ratio=window.devicePixelRatio || 1;
+	const screensize=window.screen || {};
+	const device=webosdeviceinfo() || {};
+	let width=Math.max(Math.round(window.innerWidth*ratio),Math.round((screensize.width || 0)*ratio),parseInt(device.screenWidth,10) || 0);
+	let height=Math.max(Math.round(window.innerHeight*ratio),Math.round((screensize.height || 0)*ratio),parseInt(device.screenHeight,10) || 0);
+	const uhd=(about.tv && String(about.tv.uhd)==="true") || String(device.uhd)==="true";
+	if(uhd && width<3840){
+		width=3840;
+		height=2160;
+	}
+	const name=height>=4320?"8K":height>=2160?"4K":height>=1440?"QHD":height>=1080?"Full HD":height>=720?"HD":"SD";
+	return {panel:width+" x "+height+" ("+name+")",page:window.innerWidth+" x "+window.innerHeight+(ratio!==1?" @ "+ratio+"x":"")};
+}
+
 function aboutpermissions() {
 	if(rooted){ return "Root (webOS Homebrew)"; }
 	return turstedapp?"Trusted app":"Standard (some features limited)";
@@ -61,6 +79,17 @@ async function lookupbackupfile() {
 	}
 }
 
+// what webOS itself tells a web app about the set (window.webOSSystem.deviceInfo, a JSON string): model, version, panel size, UHD
+function webosdeviceinfo() {
+	try {
+		const raw=window.webOSSystem && window.webOSSystem.deviceInfo;
+		const info=typeof raw==="string"?JSON.parse(raw):raw;
+		return info && typeof info==="object"?info:null;
+	} catch(e) {
+		return null;
+	}
+}
+
 async function lookuptv() {
 	const keys={"keys":["modelName","firmwareVersion","sdkVersion","UHD"]};
 	let info=null;
@@ -75,6 +104,12 @@ async function lookuptv() {
 		} catch(e) {}
 	}
 	about.tv=(info && info.modelName!==undefined)?{model:info.modelName,firmware:info.firmwareVersion,sdk:info.sdkVersion,uhd:info.UHD}:null;
+	if(!about.tv){
+		const device=webosdeviceinfo();
+		if(device && device.modelName){
+			about.tv={model:device.modelName,firmware:device.version || device.platformVersion,sdk:device.sdkVersion,uhd:device.uhd};
+		}
+	}
 }
 
 async function loadaboutdata() {
@@ -146,7 +181,8 @@ function aboutsections() {
 			["Playing now",playing || "None"]
 		]],
 		["Screen",[
-			["Resolution",window.innerWidth+" x "+window.innerHeight+(window.devicePixelRatio>1?" @ "+window.devicePixelRatio+"x":"")],
+			["Resolution",aboutresolution().panel],
+			["Page size",aboutresolution().page],
 			["Web engine",aboutengine()]
 		]],
 		["TV",[
@@ -157,7 +193,8 @@ function aboutsections() {
 			["Project","github.com/"+GITHUB_REPO],
 			["Report a problem","github.com/"+GITHUB_REPO+"/issues"],
 			["Latest release",aboutupdatetext()],
-			["License","GNU GPL v3, based on QwQHome by exkc"]
+			["License","GNU GPL v3"],
+			["Based on","QwQHome by exkc"]
 		]]
 	];
 }

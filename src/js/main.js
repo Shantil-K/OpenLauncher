@@ -147,10 +147,9 @@ function maketile (eachapp,inbar,recent) {
 				movecarried(eachapp.id);
 			} else if(inbar){
 				pincarried(eachapp.id);        // carried from the app menu onto a bar tile: pinned in its place
-			} else {
-				unpincarried();                // carried from the bar onto an app in the menu: unpinned, and put in its place
-				movecarried(eachapp.id);
 			}
+			// carried from the bar over an app in the menu: nothing. Pinning is a one-way trip; an app leaves the bar only
+			// with the bar's own Unpin button (Edit mode)
 		});
 		appitem.addEventListener("mouseleave", function(){
 			clearTimeout(droptimer);
@@ -258,9 +257,10 @@ function orderedapps(){
 	settings.order.forEach((id,i) => {rank[id]=i;});
 	const rankof=(app,i) => (app.id in rank)?rank[app.id]:settings.order.length+i;
 	const all=prefs.showSystemApps===true;
-	// the launcher's own tile isn't listed: its info is in Settings > App info
+	// the launcher's own tile isn't listed: its info is in Settings > App info. "Hide pinned apps" leaves out the ones on the
+	// bottom bar, except while editing (then they are needed to move, rename or hide them)
 	// an app in a folder is always listed, so the ones the launcher put into Inputs, TV... show up (see systemapps.js)
-	return applist.map((app,i) => ({app,rank:rankof(app,i)})).sort((x,y) => x.rank-y.rank).map((x) => x.app).filter((app) => app.id!==appid && (all || isuserapp(app) || !!settings.appfolder[app.id]));
+	return applist.map((app,i) => ({app,rank:rankof(app,i)})).sort((x,y) => x.rank-y.rank).map((x) => x.app).filter((app) => app.id!==appid && (all || isuserapp(app) || !!settings.appfolder[app.id]) && !(prefs.hidePinned===true && !editing && ispinned(app.id)));
 }
 
 // Hidden apps live at the end of the menu order. Hiding one sends it there; unhiding leaves it where it is until Edit mode
@@ -277,7 +277,7 @@ function hiddenlast(){
 }
 
 const CARRY_HINT_MENU="Hover other apps to move it there, or hover the bottom bar to pin it. Rest on it to drop.";
-const CARRY_HINT_BAR="Hover other apps to move it there, or hover the app menu to unpin it. Rest on it to drop.";
+const CARRY_HINT_BAR="Hover other apps in the bar to move it there. To take it off the bar, drop it and use its Unpin button. Rest on it to drop.";
 
 function startcarry(id,inbar){
 	carrying={id,inbar,armed:false};
@@ -308,8 +308,9 @@ function movecarried(targetid){
 	render();
 }
 
-// A carried app can cross between the app menu and the bottom bar: into the bar pins it (in the place of the tile it is
-// over, or at the end), back into the menu unpins it. `carrying.inbar` says where it is now.
+// A carried app can go from the app menu into the bottom bar, and that pins it (in the place of the tile it is over, or at the
+// end). It cannot go back: only the Unpin button of a bar tile (Edit mode) takes an app off the bar. `carrying.inbar` says
+// where it is now.
 function pincarried(beforeid){
 	const pinned=pinnedids().filter((id) => id!==carrying.id);
 	const at=beforeid===null?-1:pinned.indexOf(beforeid);
@@ -331,15 +332,6 @@ function barhovered(){
 // the Unpin button of a bottom bar tile (and "Unpin from the bar" in its OK menu)
 function unpinapp(id){
 	settings.pinned=pinnedids().filter((each) => each!==id);
-	savesettings();
-	render();
-}
-
-function unpincarried(){
-	settings.pinned=pinnedids().filter((id) => id!==carrying.id);
-	carrying.inbar=false;
-	carrying.armed=true;
-	carryhint.textContent="Unpinned. "+CARRY_HINT_MENU;
 	savesettings();
 	render();
 }
@@ -580,13 +572,11 @@ newapplistraw=await lunacallasroot('luna://com.webos.applicationManager/listApps
 newapplistraw=await lunacall('luna://com.webos.applicationManager/listApps',{});
 
 }
-console.log(newapplistraw);
 	newapplist=newapplistraw.apps;
 
 if (!( JSON.stringify(applist) === JSON.stringify(newapplist) ) ) {
 	applist=newapplist;
 	syncsystemfolders();
-	console.log("reinit");
 tilecache.bar.clear();
 tilecache.drawer.clear();
 tilecache.recent.clear();

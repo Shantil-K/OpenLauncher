@@ -19,7 +19,7 @@
 //            "heading"  just `label`: a small title that starts a group of rows (no key, nothing saved)
 //   show     optional function(prefs) returning false to hide the row while it doesn't apply
 //
-// Rows with 5 or more buttons or `wide: true` are laid out stacked (buttons under the label). A `hint` is shown in the strip
+// A row with `wide: true` is laid out stacked (its control under the label). A `hint` is shown in the strip
 // under the panel while its row has the focus. More item fields: `stepper: true` (a choice drawn as < value >), `compact: true`
 // (short buttons), `cards: true` (big buttons; an option may have a third entry, an icon name), `icon` on an action.
 // Sections have an `icon` (shown on the tab); src/js/preview.js draws the live preview beside some tabs.
@@ -63,6 +63,7 @@ const SETTINGS_SCHEMA=[
 		{key:"menuSize",compact:true,label:"Size",type:"choice",default:5,options:SIZE_OPTIONS(4,5,6,7.5)},
 		{key:"menuOpacity",label:"Background",type:"slider",default:50,min:0,max:100,step:5,unit:"%",hint:"How dark the app menu's background is. 0% shows the wallpaper through it, 100% hides it."},
 		{key:"showSystemApps",label:"System apps",type:"choice",default:false,options:ON_OFF,hint:"The TV marks its inputs, services and helper apps as not meant for an app list, so they are left out. Turn this on to list every app anyway."},
+		{key:"hidePinned",label:"Hide pinned apps",type:"choice",default:false,options:ON_OFF,hint:"Leave the apps that are on the bottom bar out of the app menu, so each app shows once. Edit mode still lists them, so you can move or unpin them."},
 		{key:"menuNames",label:"Names",type:"choice",default:true,options:ON_OFF},
 		{key:"menuNameSize",compact:true,label:"Name size",type:"choice",default:1.5,options:SIZE_OPTIONS(1.2,1.5,1.9,2.3),show:(p) => p.menuNames},
 		{label:"Folders",type:"custom",wide:true,render:(box) => renderfolderlist(box),
@@ -71,7 +72,7 @@ const SETTINGS_SCHEMA=[
 		{key:"recentShow",label:"Show",type:"choice",default:false,options:ON_OFF,hint:"A row of the apps you launched last, above the bottom bar"},
 		{key:"recentCount",label:"How many",type:"choice",default:5,options:[[3,"3"],[5,"5"],[7,"7"],[9,"9"]],show:(p) => p.recentShow},
 		{type:"heading",label:"Colour"},
-		{key:"accent",label:"Hover colour",type:"swatch",default:"255,150,255",options:[
+		{key:"accent",label:"Hover colour",type:"swatch",default:"80,220,230",options:[
 			["255,150,255","Pink"],["255,90,90","Red"],["255,160,60","Orange"],["255,215,80","Yellow"],["110,220,120","Green"],
 			["80,220,230","Cyan"],["90,170,255","Blue"],["170,120,255","Purple"],["255,255,255","White"]]}
 	]},
@@ -115,7 +116,6 @@ SETTINGS_SCHEMA.forEach((section) => section.items.forEach((item) => {
 
 let prefs=Object.assign({},PREF_DEFAULTS);
 let settingstab=SETTINGS_SCHEMA[0].id;
-const STACK_OPTIONS=6;        // this many buttons or more: the row is stacked
 let confirming=null;   // the action item waiting for "are you sure?"
 
 const POSITION_RE=/^(top|center|bottom)-(left|center|right)$/;
@@ -399,12 +399,6 @@ function controlfor(item){
 	return box;
 }
 
-// a row with many buttons gets the whole width: label on top, buttons below (a stepper or a switch is small, so never)
-function stacked(item){
-	if(item.wide){ return true; }
-	return item.type==="choice" && !item.stepper && item.options!==ON_OFF && item.options.length>=STACK_OPTIONS;
-}
-
 // the streamed videos by source, biggest first: "Apple 139 videos"
 function rendersources(box){
 	const counts={};
@@ -447,7 +441,7 @@ function renderpane(){
 			settingspane.appendChild(el("div","sheading",item.label));
 			return;
 		}
-		const row=el("div",stacked(item)?"srow wide":"srow");
+		const row=el("div",item.wide?"srow wide":"srow");
 		const label=el("div","slabel");
 		if(item.nolabel){ row.classList.add("nolabel"); } else { label.appendChild(el("span","slabeltext",item.label)); }
 		if(item.hint){
