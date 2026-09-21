@@ -20,6 +20,8 @@
 <script src="js/backup.js"></script>
 <script src="js/folders.js"></script>
 <script src="js/systemapps.js"></script>
+<script src="js/rename.js"></script>
+<script src="js/about.js"></script>
 <script src="js/dpad.js"></script>
 <script src="js/weather.js"></script>
 <script src="js/background.js"></script>
@@ -95,9 +97,20 @@
 		<div id="foldermessage" class="sstatus"></div>
 	</div>
 	<div id="movetoast"></div>
+	<div id="renamebackdrop"></div>
+	<div id="renamebox">
+		<div id="renamehead">
+			<img id="renameappicon" alt="">
+			<div id="renameheadtext"><span id="renametitle">Rename</span><small id="renameoriginal"></small></div>
+			<button id="renameclose" title="Close" aria-label="Close"></button>
+		</div>
+		<input type="text" id="renameinput" class="stext" maxlength="40" placeholder="Name">
+		<div id="renameactions"><button id="renamesave" class="sopt">Save</button><button id="renamereset" class="sopt">Use the original name</button></div>
+		<div id="renamemessage" class="sstatus"></div>
+	</div>
 	<div id="settingsbackdrop"></div>
 	<div id="settingspanel">
-		<div id="settingshead"><span>Settings</span><button id="settingsclose" title="Close" aria-label="Close"></button></div>
+		<div id="settingshead"><span>OpenLauncherSettings</span><button id="settingsclose" title="Close" aria-label="Close"></button></div>
 		<div id="settingsbody">
 			<div id="settingstabs"></div>
 			<div id="settingspane"></div>

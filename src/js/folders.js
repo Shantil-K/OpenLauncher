@@ -247,7 +247,7 @@ function showmovetoast(text) {
 
 function apptitle(appid) {
 	const app=applist.filter((each) => each.id===appid)[0];
-	return app?app.title:appid;
+	return app?appdisplayname(app):appid;
 }
 
 // move the app being edited to a folder (null: the main list) and say so
@@ -336,7 +336,7 @@ function renderfolderpicker() {
 	const current=settings.appfolder[pickerapp] || null;
 	const app=applist.filter((each) => each.id===pickerapp)[0];
 	const now=current?folderbyid(current):null;
-	folderapp.textContent=app?"Move "+app.title+" to":"Move to folder";
+	folderapp.textContent=app?"Move "+appdisplayname(app)+" to":"Move to folder";
 	foldercurrent.textContent=now?"Now in "+now.name:"Now in the main list";
 	if(app){
 		folderappicon.src=appiconsrc(app);

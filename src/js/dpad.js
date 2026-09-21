@@ -75,6 +75,7 @@ function appmenuopen() {
 }
 
 function contextname() {
+	if(renameopen()){ return "rename"; }
 	if(folderpickeropen()){ return "picker"; }
 	if(appmenuopen()){ return "menu"; }
 	if(settingsisopen()){ return "settings"; }
@@ -83,6 +84,7 @@ function contextname() {
 }
 
 function contextelements() {
+	if(renameopen()){ return within(renamebox,"button, input"); }
 	if(folderpickeropen()){ return within(folderpicker,"button, input"); }
 	if(appmenuopen()){ return within(appmenu,"button"); }
 	if(settingsisopen()){ return within(settingspanel,"button, input, textarea"); }
@@ -131,6 +133,7 @@ function defaultfocus(list) {
 		const tab=list.filter((el) => el.classList.contains("stab") && el.classList.contains("on"))[0];
 		if(tab){ return tab; }
 	}
+	if(renameopen()){ return renameinput; }       // ready to type; OK opens the keyboard
 	if(folderpickeropen()){
 		// start on the list (on the folder the app is in, if it is in one), not on the close button in the corner
 		const choices=list.filter((el) => folderlist.contains(el));
@@ -177,7 +180,7 @@ function openappmenu(tile) {
 	returnto=tile;
 	const inbar=appbar.contains(tile);
 	const app=applist.filter((each) => each.id===id)[0];
-	appmenutitle.textContent=app?app.title:id;
+	appmenutitle.textContent=app?appdisplayname(app):id;
 	appmenulist.innerHTML="";
 	const add=(label,action,keepopen) => {
 		const button=el("button","sopt",label);
@@ -188,9 +191,12 @@ function openappmenu(tile) {
 		appmenulist.appendChild(button);
 		return button;
 	};
-	if(!inbar){
+	if(inbar){
+		add("Unpin from the bar",() => unpinapp(id));      // only for the bar's own tiles
+	} else {
 		add(ishidden(id)?"Show":"Hide",() => togglehide(id));
 		add("Move to folder...",() => openfolderpicker(id));
+		add("Rename...",() => openrename(id));
 	}
 	add("Reorder",() => {
 		startcarry(id,inbar);
@@ -216,7 +222,7 @@ function openuninstallquestion(tile) {
 
 // "Uninstall..." asks first; the focus starts on Cancel so a stray OK does no harm
 function askuninstall(tile,id,app,direct) {
-	appmenutitle.textContent="Uninstall "+app.title+"?";
+	appmenutitle.textContent="Uninstall "+appdisplayname(app)+"?";
 	appmenulist.innerHTML="";
 	const cancel=el("button","sopt","Cancel");
 	cancel.addEventListener("click",() => { if(direct){ closeappmenu(); } else { openappmenu(tile); } });
@@ -262,6 +268,8 @@ function handleback() {
 		stopcarry();
 	} else if(appmenuopen()){
 		closeappmenu();
+	} else if(renameopen()){
+		closerename();
 	} else if(folderpickeropen()){
 		closefolderpicker();
 	} else if(settingsisopen()){
@@ -280,7 +288,7 @@ function handleback() {
 
 function activate(el) {
 	// only a press on the screen underneath sets where to come back to; buttons inside a menu or panel are about to vanish
-	if(!appmenuopen() && !folderpickeropen() && !settingsisopen() && !infoisopen()){ returnto=el; }
+	if(!appmenuopen() && !folderpickeropen() && !renameopen() && !settingsisopen() && !infoisopen()){ returnto=el; }
 	// folder tiles replace the whole list, so there is no "same place" to come back to
 	lastactivation=el.classList.contains("foldertile")?null:{context:contextname(),index:contextelements().indexOf(el)};
 	if(istextbox(el)){
@@ -330,7 +338,11 @@ function onkey(event) {
 	const list=contextelements();
 	if(list.length===0){ return; }
 	if(!dpadfocus || list.indexOf(dpadfocus)===-1){
-		// nothing (visible) is focused: this key press only shows the focus ring
+		// nothing (visible) is focused: this key press only shows the focus ring, on the item the pointer was on if there is one
+		if(entering && hoveredel && list.indexOf(hoveredel)!==-1){
+			setfocus(hoveredel);
+			return;
+		}
 		settle();
 		return;
 	}
@@ -361,13 +373,47 @@ function onkey(event) {
 	}
 	const others=list.filter((each) => each!==dpadfocus);
 	const index=pickneighbor(dpadfocus.getBoundingClientRect(),others.map((each) => each.getBoundingClientRect()),code);
-	if(index!==-1){ setfocus(others[index]); }
+	if(index!==-1){
+		setfocus(others[index]);
+	} else if(code===KEY_RIGHT && dpadfocus===editbtn){
+		// nothing to the right of Edit/Done: go round to the Apps button at the other end of the bottom row
+		const apps=within(appbar,".appitem")[0];
+		if(apps){ setfocus(apps); }
+	}
 }
 
 function onmouse(event) {
 	mousex=event.clientX;
 	mousey=event.clientY;
 	if(keyboardmode && Math.abs(mousex-anchorx)+Math.abs(mousey-anchory)>MOUSE_SWITCH_PX){ clearfocus(); }
+}
+
+// ---- the item the pointer is on. When the Magic Remote's cursor times out (webOS sends "cursorStateChange" with
+// visibility false) that item keeps the focus, and the arrows carry on from it; a key pressed while the cursor is still on
+// screen starts from it too, instead of from the first app.
+let hoveredel=null;
+
+// the thing in the current list that the pointer is over (or over a part of), or null
+function hoverable(target) {
+	const list=contextelements();
+	for(let node=target;node;node=node.parentNode){
+		if(list.indexOf(node)!==-1){ return node; }
+	}
+	return null;
+}
+
+function onmouseover(event) {
+	hoveredel=hoverable(event.target);
+}
+
+function oncursorstate(event) {
+	if(!event.detail || event.detail.visibility!==false || istyping()){ return; }
+	const el=hoveredel;
+	if(!el || contextelements().indexOf(el)===-1){ return; }
+	keyboardmode=true;
+	anchorx=mousex;
+	anchory=mousey;
+	setfocus(el);
 }
 
 function initdpad() {
@@ -379,6 +425,8 @@ function initdpad() {
 	});
 	window.addEventListener("keydown",onkey);
 	window.addEventListener("mousemove",onmouse,true);
+	window.addEventListener("mouseover",onmouseover,true);
+	document.addEventListener("cursorStateChange",oncursorstate);
 	window.addEventListener("mousedown",() => { if(keyboardmode){ clearfocus(); } },true);
 }
 

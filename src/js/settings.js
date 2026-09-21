@@ -62,7 +62,7 @@ const SETTINGS_SCHEMA=[
 		{type:"heading",label:"App menu"},
 		{key:"menuSize",compact:true,label:"Size",type:"choice",default:5,options:SIZE_OPTIONS(4,5,6,7.5)},
 		{key:"menuOpacity",label:"Background",type:"slider",default:50,min:0,max:100,step:5,unit:"%",hint:"How dark the app menu's background is. 0% shows the wallpaper through it, 100% hides it."},
-		{key:"showSystemApps",label:"System apps",type:"choice",default:false,options:ON_OFF,hint:"The TV marks its inputs, services and helper apps as not meant for an app list, so they are left out. Turn this on to list every app anyway (Live TV, HDMI inputs and Settings stay on the bottom bar either way)."},
+		{key:"showSystemApps",label:"System apps",type:"choice",default:false,options:ON_OFF,hint:"The TV marks its inputs, services and helper apps as not meant for an app list, so they are left out. Turn this on to list every app anyway."},
 		{key:"menuNames",label:"Names",type:"choice",default:true,options:ON_OFF},
 		{key:"menuNameSize",compact:true,label:"Name size",type:"choice",default:1.5,options:SIZE_OPTIONS(1.2,1.5,1.9,2.3),show:(p) => p.menuNames},
 		{label:"Folders",type:"custom",wide:true,render:(box) => renderfolderlist(box),
@@ -78,6 +78,9 @@ const SETTINGS_SCHEMA=[
 	{id:"wallpaper",title:"Wallpaper",icon:"wallpaper",items:[
 		{key:"videoSource",label:"Video source",type:"choice",default:"online",cards:true,options:[["online","Online","cloud"],["offline","Built in","drive"],["custom","My own","photo"]],
 			hint:"Online streams about 2.7 GB per hour. Offline plays the video built into the launcher. My own plays the links you add below."},
+		{label:"Video sources",type:"custom",wide:true,show:(p) => p.videoSource==="online",
+			hint:"Where the streamed videos come from and how many there are of each. The list is from couchy-launcher; the videos stay on their own servers.",
+			render:(box) => rendersources(box)},
 		{key:"customUrls",label:"My wallpapers",type:"custom",wide:true,default:[],show:(p) => p.videoSource==="custom",
 			hint:"Links to videos (.mp4 .mov .mkv .webm) and photos (.jpg .png .webp). They play in random order.",
 			valid:(v) => Array.isArray(v) && v.length<=CUSTOM_MAX && v.every(validcustomurl),
@@ -89,7 +92,9 @@ const SETTINGS_SCHEMA=[
 			hint:"Nudges the clock, bar and buttons a few pixels every minute so an OLED screen doesn't keep the same pixels lit"},
 		{key:"idleAfter",label:"When idle after",type:"choice",default:0,options:[[0,"Never"],[1,"1 min"],[2,"2 min"],[5,"5 min"],[10,"10 min"]],
 			hint:"No pointer or button input for this long"},
-		{key:"idleAction",label:"Then",type:"choice",default:"dim",options:[["dim","Dim all"],["hidebar","Hide bar"]],hint:"Dim all dims everything. Hide bar also hides the bottom bar and dims the rest.",show:(p) => p.idleAfter>0}
+		{key:"idleAction",label:"Then",type:"choice",default:"dim",options:[["dim","Dim all"],["hidebar","Hide bar"]],hint:"Dim all dims everything. Hide bar also hides the bottom bar and dims the rest.",show:(p) => p.idleAfter>0},
+		{key:"idleDim",label:"Dim level",type:"slider",default:30,min:5,max:100,step:5,unit:"%",show:(p) => p.idleAfter>0,
+			hint:"How bright the clock, bar and buttons stay when idle. Lower is darker. The small screen beside shows it."}
 	]},
 	{id:"backup",title:"Backup",icon:"save",items:[
 		{label:"Settings backup",type:"custom",wide:true,hint:"Export your settings and app layout as JSON, or import a backup again.",render:(box,item) => renderbackup(box,item)}
@@ -97,6 +102,9 @@ const SETTINGS_SCHEMA=[
 	{id:"tv",title:"TV",icon:"tv",items:[
 		{type:"action",label:"TV settings",hint:"Opens the TV's own settings",button:"Open",icon:"open",run:() => launchapp("com.palm.app.settings")},
 		{type:"action",label:"Reset launcher",hint:"Put every setting on this screen back to its default",button:"Reset",icon:"reset",confirm:"Are you sure?",confirmButton:"Yes, reset",run:() => resetprefs()}
+	]},
+	{id:"about",title:"App info",icon:"info",items:[
+		{label:"App info",type:"custom",wide:true,nolabel:true,render:(box) => renderabout(box)}
 	]}
 ];
 
@@ -185,6 +193,7 @@ function applysizes(){
 	root.setProperty("--bartile",prefs.barSize+"vw");
 	root.setProperty("--menutile",prefs.menuSize+"vw");
 	root.setProperty("--menuopacity",String(prefs.menuOpacity/100));
+	root.setProperty("--idledim",String(prefs.idleDim/100));
 	root.setProperty("--barname",prefs.barNameSize+"vh");
 	root.setProperty("--menuname",prefs.menuNameSize+"vh");
 	// Sizes below are estimates in vh/vw of what a tile needs: a tile is about as tall as it is wide, plus its name
@@ -396,6 +405,24 @@ function stacked(item){
 	return item.type==="choice" && !item.stepper && item.options!==ON_OFF && item.options.length>=STACK_OPTIONS;
 }
 
+// the streamed videos by source, biggest first: "Apple 139 videos"
+function rendersources(box){
+	const counts={};
+	const list=typeof aerials!=="undefined"?aerials:[];
+	list.forEach((video) => { counts[video.s]=(counts[video.s] || 0)+1; });
+	const names=Object.keys(counts).sort((a,b) => counts[b]-counts[a]);
+	const table=el("div","sources");
+	names.forEach((name) => {
+		const row=el("div","sourcerow");
+		row.appendChild(el("span","sourcename",name));
+		row.appendChild(el("span","sourcecount",counts[name]+(counts[name]===1?" video":" videos")));
+		table.appendChild(row);
+	});
+	if(names.length===0){ table.appendChild(el("div","sstatus","No streamed videos in this build.")); }
+	box.appendChild(table);
+	if(names.length>0){ box.appendChild(el("div","sstatus",list.length+" in all")); }
+}
+
 function renderpane(){
 	const section=SETTINGS_SCHEMA.filter((s) => s.id===settingstab)[0];
 	settingstabs.innerHTML="";
@@ -422,7 +449,7 @@ function renderpane(){
 		}
 		const row=el("div",stacked(item)?"srow wide":"srow");
 		const label=el("div","slabel");
-		label.appendChild(el("span","slabeltext",item.label));
+		if(item.nolabel){ row.classList.add("nolabel"); } else { label.appendChild(el("span","slabeltext",item.label)); }
 		if(item.hint){
 			const mark=el("span","shintmark");
 			mark.innerHTML=iconsvg("info");
@@ -452,9 +479,12 @@ function settingsfocused(el){
 	sethint("");
 }
 
+// what the strip says while no setting with an explanation has the focus or the pointer
+const HINT_LEGEND="Hover over the info icon next to a setting to view more info";
+
 function sethint(text){
 	settingshint.classList.toggle("on",text!=="");
-	settingshinttext.textContent=text;
+	settingshinttext.textContent=text!==""?text:HINT_LEGEND;
 }
 
 function settingsisopen(){
@@ -480,6 +510,7 @@ function initsettings(){
 	settingsbtn.addEventListener("click",opensettings);
 	settingsclose.innerHTML=iconsvg("close");
 	settingshinticon.innerHTML=iconsvg("info");
+	sethint("");
 	settingsclose.addEventListener("click",closesettings);
 	settingsbackdrop.addEventListener("click",closesettings);
 	window.addEventListener("resize",applysizes);

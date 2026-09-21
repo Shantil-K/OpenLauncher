@@ -5,7 +5,7 @@
 // preview can be focused or clicked.
 
 // which preview a Settings tab gets: "screen" is the clock/date/weather one, "tiles" the bar and menu one
-const PREVIEW_FOR_TAB={clock:"screen",date:"screen",weather:"screen",apps:"tiles"};
+const PREVIEW_FOR_TAB={clock:"screen",date:"screen",weather:"screen",apps:"tiles",screen:"idle"};
 const PREVIEW_MENU_TILES=40;        // enough to fill the miniature menu at any size
 const PREVIEW_BAR_TILES=6;
 const PREVIEW_TEMPERATURE={c:"21°C",f:"70°F"};
@@ -81,8 +81,9 @@ function previewbar(p,recent){
 }
 
 // the miniature home screen
-function previewscreen(p){
-	const screen=el("div","pvscreen");
+// `idle`: the screen as it looks once idle dimming has set in (Settings > Screen)
+function previewscreen(p,idle){
+	const screen=el("div","pvscreen"+(idle?" pvidle"+(p.idleAction==="hidebar"?" pvhidebar":""):""));
 	const now=previewnow();
 	const cells={};
 	const put=(pos,node) => {
@@ -125,6 +126,11 @@ function renderpreview(){
 	const kind=PREVIEW_FOR_TAB[settingstab];
 	settingspreview.innerHTML="";
 	settingspreview.classList.toggle("on",!!kind);
-	if(kind==="screen"){ settingspreview.appendChild(previewscreen(prefs)); }
+	if(kind==="screen"){ settingspreview.appendChild(previewscreen(prefs,false)); }
+	if(kind==="idle"){
+		const show=prefs.idleAfter>0;
+		settingspreview.classList.toggle("on",show);
+		if(show){ settingspreview.appendChild(previewscreen(prefs,true)); }
+	}
 	if(kind==="tiles"){ settingspreview.appendChild(previewtiles(prefs)); }
 }

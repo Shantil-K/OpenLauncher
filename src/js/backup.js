@@ -17,6 +17,18 @@ function cleanstrings(list){
 	return Array.isArray(list)?list.filter((x) => typeof x==="string"):null;
 }
 
+// the names you gave apps: only non-empty strings, cut to the length the launcher allows
+function cleannames(names){
+	const clean={};
+	if(names && typeof names==="object"){
+		Object.keys(names).forEach((id) => {
+			const name=typeof names[id]==="string"?names[id].trim().slice(0,APP_NAME_MAX):"";
+			if(name!==""){ clean[id]=name; }
+		});
+	}
+	return clean;
+}
+
 // Check a backup document. Returns {error} or {prefs, layout, count}; anything the current schema doesn't offer is dropped.
 function parsebackup(text){
 	let data;
@@ -57,6 +69,7 @@ function parsebackup(text){
 			order:cleanstrings(saved.order) || [],
 			folders:folders,
 			appfolder:appfolder,
+			names:cleannames(saved.names),
 			sysplaced:cleanstrings(saved.sysplaced) || [],
 			sysdismissed:cleanstrings(saved.sysdismissed) || []
 		}
@@ -71,6 +84,7 @@ function applybackup(parsed){
 	settings.order=parsed.layout.order;
 	settings.folders=parsed.layout.folders;
 	settings.appfolder=parsed.layout.appfolder;
+	settings.names=parsed.layout.names;
 	settings.sysplaced=parsed.layout.sysplaced;
 	settings.sysdismissed=parsed.layout.sysdismissed;
 	savesettings();
@@ -96,6 +110,7 @@ async function readbackupfile(){
 
 async function exportbackup(){
 	backuptext=makebackup();
+	try { localStorage.setItem(LAST_BACKUP_KEY,String(Date.now())); } catch(e) {}
 	backupmessage="Backup created. Copy the text below and keep it somewhere safe.";
 	if(rooted){
 		let saved=false;

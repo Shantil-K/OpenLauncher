@@ -6,7 +6,7 @@ const SETTINGS_KEY='openlauncher.settings';
 // used until the user pins/unpins something for the first time
 const DEFAULT_PINNED=["com.webos.app.livetv","com.webos.app.hdmi1","com.webos.app.hdmi2","com.webos.app.hdmi3","com.webos.app.hdmi4","com.webos.app.mediadiscovery","com.famobi.ctr","com.halfbrick.fruitninja","com.github.k4zmu2a.space-cadet-pinball"];
 // sysplaced / sysdismissed: see systemapps.js
-let settings={pinned:null,hidden:[],order:[],folders:[],appfolder:{},sysplaced:[],sysdismissed:[]};
+let settings={pinned:null,hidden:[],order:[],folders:[],appfolder:{},sysplaced:[],sysdismissed:[],names:{}};    // names: app id -> the name you gave it
 // hover-only reordering: rest on a tile's Move zone to pick the app up, hover other tiles to move it, rest on it to drop
 const PICKUP_MS=875;
 const DROP_MS=700;
@@ -77,7 +77,8 @@ function maketile (eachapp,inbar,recent) {
 		appicon.addEventListener("error", function(e){
 			e.target.src=appdir+"/access/fallback.png";
 		});
-		appname.innerText=eachapp.title;
+		appname.innerText=appdisplayname(eachapp);
+		appitem.namelabel=appname;
 		appname.setAttribute("class","appname");
 		appitem.setAttribute("class",recent?"appitem recenttile":"appitem");
 		appitem.setAttribute("data-appid",eachapp.id);
@@ -92,14 +93,24 @@ function maketile (eachapp,inbar,recent) {
 			const folderbtn=ctlbutton(() => openfolderpicker(eachapp.id));
 			setctl(folderbtn,"Move to folder","folder");
 			appctl.appendChild(folderbtn);
+			const renamebtn=ctlbutton(() => openrename(eachapp.id));
+			setctl(renamebtn,"Rename","pencil");
+			appctl.appendChild(renamebtn);
 			if(canuninstall(eachapp)){
 				const trashbtn=ctlbutton(() => openuninstallquestion(appitem));
 				trashbtn.classList.add("dangerctl");
 				setctl(trashbtn,"Uninstall","trash");
 				appctl.appendChild(trashbtn);
 			} else {
-				folderbtn.classList.add("wide");
+				renamebtn.classList.add("wide");
 			}
+		}
+		if(inbar && !recent){
+			// only the bottom bar has this: the app menu pins by carrying an app onto the bar (see pincarried)
+			const unpinbtn=ctlbutton(() => unpinapp(eachapp.id));
+			unpinbtn.classList.add("wide");
+			setctl(unpinbtn,"Unpin","unpin");
+			appctl.appendChild(unpinbtn);
 		}
 		if(recent){
 			watchmarquee(appitem);
@@ -172,12 +183,16 @@ function tilefor(app,inbar,cache){
 		tile=maketile(app,inbar,cache===tilecache.recent);
 		cache.set(app.id,tile);
 	}
-	updatetile(tile,app.id,inbar);
+	updatetile(tile,app.id,inbar,app);
 	return tile;
 }
 
 // bring a kept tile in line with the current settings without recreating anything
-function updatetile(tile,id,inbar){
+function updatetile(tile,id,inbar,app){
+	if(app && tile.namelabel){
+		const shown=appdisplayname(app);
+		if(tile.namelabel.innerText!==shown){ tile.namelabel.innerText=shown; }
+	}
 	tile.classList.toggle("hiddenapp",ishidden(id));
 	tile.classList.toggle("pinnedapp",!inbar && ispinned(id));
 	tile.classList.toggle("carried",!!carrying && carrying.id===id && carrying.inbar===inbar);
@@ -215,6 +230,24 @@ function ctlbutton(onclick){
 // The TV marks the apps that are not meant to be in an app list (inputs, services, overlays, accessibility helpers...) with
 // visible:false: on an LG C2 that is 134 of the 189 apps. They stay in `applist` (the bottom bar still finds Live TV and the
 // HDMI inputs there) but are left out of the app menu unless "System apps" is on in the Apps settings.
+// ---- the name an app is shown with: the one you gave it (Edit mode, Rename), or the TV's
+const APP_NAME_MAX=40;
+
+function appdisplayname(app){
+	return (settings.names && settings.names[app.id]) || app.title;
+}
+
+// "" (or the TV's own name) goes back to the original
+function setappname(id,name){
+	const app=applist.filter((each) => each.id===id)[0];
+	const clean=String(name).trim().slice(0,APP_NAME_MAX);
+	const next=Object.assign({},settings.names);
+	if(clean==="" || (app && clean===app.title)){ delete next[id]; } else { next[id]=clean; }
+	settings.names=next;
+	savesettings();
+	render();
+}
+
 function isuserapp(app){
 	return app.visible!==false;
 }
@@ -225,8 +258,9 @@ function orderedapps(){
 	settings.order.forEach((id,i) => {rank[id]=i;});
 	const rankof=(app,i) => (app.id in rank)?rank[app.id]:settings.order.length+i;
 	const all=prefs.showSystemApps===true;
+	// the launcher's own tile isn't listed: its info is in Settings > App info
 	// an app in a folder is always listed, so the ones the launcher put into Inputs, TV... show up (see systemapps.js)
-	return applist.map((app,i) => ({app,rank:rankof(app,i)})).sort((x,y) => x.rank-y.rank).map((x) => x.app).filter((app) => all || isuserapp(app) || !!settings.appfolder[app.id]);
+	return applist.map((app,i) => ({app,rank:rankof(app,i)})).sort((x,y) => x.rank-y.rank).map((x) => x.app).filter((app) => app.id!==appid && (all || isuserapp(app) || !!settings.appfolder[app.id]));
 }
 
 // Hidden apps live at the end of the menu order. Hiding one sends it there; unhiding leaves it where it is until Edit mode
@@ -294,6 +328,13 @@ function barhovered(){
 	if(carrying && !carrying.inbar){ pincarried(null); }
 }
 
+// the Unpin button of a bottom bar tile (and "Unpin from the bar" in its OK menu)
+function unpinapp(id){
+	settings.pinned=pinnedids().filter((each) => each!==id);
+	savesettings();
+	render();
+}
+
 function unpincarried(){
 	settings.pinned=pinnedids().filter((id) => id!==carrying.id);
 	carrying.inbar=false;
@@ -310,6 +351,13 @@ function loadsettings(){
 			settings.pinned=Array.isArray(saved.pinned)?saved.pinned:null;
 			settings.hidden=Array.isArray(saved.hidden)?saved.hidden:[];
 			settings.order=Array.isArray(saved.order)?saved.order:[];
+			settings.names={};
+			if(saved.names && typeof saved.names==="object"){
+				Object.keys(saved.names).forEach((id) => {
+					const name=typeof saved.names[id]==="string"?saved.names[id].trim().slice(0,APP_NAME_MAX):"";
+					if(name!==""){ settings.names[id]=name; }
+				});
+			}
 			settings.sysplaced=Array.isArray(saved.sysplaced)?saved.sysplaced.filter((id) => typeof id==="string"):[];
 			settings.sysdismissed=Array.isArray(saved.sysdismissed)?saved.sysdismissed.filter((id) => typeof id==="string"):[];
 			settings.folders=Array.isArray(saved.folders)?saved.folders.filter((f) => f && typeof f.id==="string" && typeof f.name==="string"):[];
@@ -475,6 +523,11 @@ function forgetapp(id){
 	const kept={};
 	Object.keys(settings.appfolder).forEach((each) => { if(each!==id){ kept[each]=settings.appfolder[each]; } });
 	settings.appfolder=kept;
+	if(settings.names && settings.names[id]!==undefined){
+		const names=Object.assign({},settings.names);
+		delete names[id];
+		settings.names=names;
+	}
 	savesettings();
 	recent=recent.filter((each) => each!==id);
 	try {
@@ -485,7 +538,7 @@ function forgetapp(id){
 // asks the TV to remove the app, then waits for it to leave the app list before forgetting it
 async function uninstallapp(id){
 	const app=applist.filter((each) => each.id===id)[0];
-	const name=app?app.title:id;
+	const name=app?appdisplayname(app):id;
 	if(!canuninstall(app)){
 		toasty(id===appid?"The launcher can't uninstall itself.":name+" can't be uninstalled.");
 		return false;

@@ -223,15 +223,18 @@ z-index:9999;
 /* while carrying, tiles show no controls; the carried one is ringed */
 #maindiv.carrying .appitem:hover .appctl { display: none; }
 #maindiv.carrying .carried { box-shadow: inset 0 0 0 3px rgb(var(--accent)); background-color: rgba(var(--accent), 0.35); }
+/* bottom right, above the Edit/Done buttons and beside the bottom bar's tiles: it covers neither the folder chips at the top nor
+   the bar (its tiles start at the left) */
 #carryhint {
 	display: none;
 	position: fixed;
-	top: 2vh;
-	left: 50%;
-	transform: translateX(-50%);
-	z-index: 10000;
-	padding: 0.8vh 1.6vw;
-	font-size: 2vh;
+	bottom: 11vh;
+	right: 2vw;
+	max-width: 26vw;
+	z-index: 10001;
+	padding: 0.6vh 1vw;
+	font-size: 1.7vh;
+	line-height: 1.25;
 	color: rgb(255,255,255);
 	background-color: rgba(0,0,0,0.75);
 	border: 2px solid rgb(var(--accent));
@@ -421,7 +424,7 @@ z-index:9999;
 .sicononly.flip svg { transform: scaleX(-1); }
 .sstepvalue { min-width: 12vw; align-self: center; text-align: center; font-size: 2.2vh; }
 /* the explanation of the row that has the focus */
-#settingshint { display: flex; align-items: center; gap: 0.8vw; min-height: 5.6vh; padding: 0 2vw; font-size: 1.9vh; color: rgba(255,255,255,0.85); border-top: 1px solid rgba(255,255,255,0.2); opacity: 0; transition: opacity 0.2s ease; }
+#settingshint { display: flex; align-items: center; gap: 0.8vw; min-height: 5.6vh; padding: 0 2vw; font-size: 1.9vh; color: rgba(255,255,255,0.85); border-top: 1px solid rgba(255,255,255,0.2); opacity: 0.6; transition: opacity 0.2s ease; }
 #settingshint.on { opacity: 1; }
 #settingshint { border-top-color: transparent; }
 #settingshint.on { border-top-color: rgba(255,255,255,0.2); }
@@ -441,6 +444,8 @@ z-index:9999;
 .pvlayer[data-h="center"] { align-items: center; text-align: center; }
 .pvlayer[data-h="right"] { align-items: flex-end; text-align: right; }
 .pvscreen.hasrecent .pvlayer[data-v="bottom"] { padding-bottom: calc((var(--barh) + var(--recenth)) * var(--pv) + 4%); }
+.pvidle .pvlayer > *, .pvidle > .pvbar, .pvidle > .pvbars { filter: brightness(var(--idledim, 0.3)); }
+.pvidle.pvhidebar > .pvbar, .pvidle.pvhidebar > .pvbars { opacity: 0; }
 .pvtime { font-size: calc(15vh * var(--pv)); line-height: 1.05; white-space: nowrap; }
 .pvtime.stacked { font-size: calc(19vh * var(--pv)); line-height: 0.95; }
 .pvtime.stacked span, .pvtime.stacked small { display: block; }
@@ -474,6 +479,25 @@ z-index:9999;
 .srange::-webkit-slider-thumb { -webkit-appearance: none; width: 2.8vh; height: 2.8vh; border-radius: 50%; background: rgb(var(--accent)); border: 2px solid rgb(255,255,255); }
 .srange.dfocus { outline-offset: 1vh; }
 .ssliderval { flex: 0 0 auto; min-width: 4vw; text-align: right; font-size: 2.2vh; font-variant-numeric: tabular-nums; }
+/* the sources of the streamed wallpapers (Settings > Wallpaper) */
+.sources { width: 100%; }
+.sourcerow { display: flex; align-items: center; justify-content: space-between; padding: 0.9vh 1vw; margin-bottom: 0.6vh; background-color: rgba(255,255,255,0.06); border-radius: 0.8vh; }
+.sourcename { font-size: 2.1vh; }
+.sourcecount { font-size: 1.8vh; opacity: 0.7; font-variant-numeric: tabular-nums; }
+/* Settings > App info */
+.srow.nolabel .slabel { display: none; }
+.scontrol > .abouthead, .scontrol > .aboutcols { flex: 1 1 100%; }
+.abouthead { display: flex; align-items: center; gap: 1.4vw; margin-bottom: 2vh; }
+.abouticon { flex: 0 0 auto; width: 10vh; height: 10vh; border-radius: 2vh; }
+.abouttitle { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.aboutname { font-size: 3.4vh; }
+.aboutsub { margin-top: 0.4vh; font-size: 1.8vh; opacity: 0.7; }
+.aboutactions { display: flex; flex-wrap: wrap; gap: 0.8vh 0.6vw; justify-content: flex-end; }
+.aboutcols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 3vw; }
+.aboutsection .sheading { margin-top: 1.6vh; }
+.aboutrow { display: flex; align-items: baseline; justify-content: space-between; gap: 1vw; padding: 0.55vh 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 1.8vh; }
+.aboutlabel { flex: 0 0 auto; opacity: 0.7; }
+.aboutvalue { min-width: 0; text-align: right; overflow-wrap: anywhere; }
 .sconfirm { align-self: center; margin-right: 0.6vw; font-size: 2.2vh; }
 .sopt.danger { background-color: rgba(255,90,90,0.35); border-color: rgb(255,90,90); }
 .sopt.danger:hover { background-color: rgb(255,90,90); color: rgb(0,0,0); }
@@ -611,7 +635,11 @@ z-index:9999;
 #maindiv.shifting .layer, #maindiv.shifting #appbar, #maindiv.shifting #recentrow, #maindiv.shifting #infobtn {
 	transform: translate(var(--shiftx), var(--shifty));
 }
-#maindiv.idle .layer, #maindiv.idle #appbar, #maindiv.idle #recentrow, #maindiv.idle #infobtn { opacity: 0.3; }
+/* Dimmed by darkening what is drawn, not by making it see-through: a see-through clock looks brighter over the black gap between
+   two wallpaper videos than over the video, but a darkened one looks the same over anything. The children are darkened, not the
+   full-screen layers, so no 4K-sized surface has to be filtered. */
+.layer > *, #appbar, #recentrow, #infobtn { transition: filter 3s ease; }
+#maindiv.idle .layer > *, #maindiv.idle #appbar, #maindiv.idle #recentrow, #maindiv.idle #infobtn { filter: brightness(var(--idledim, 0.3)); }
 #maindiv.idle-hidebar #appbar, #maindiv.idle-hidebar #recentrow, #maindiv.idle-hidebar #infobtn { opacity: 0; pointer-events: none; }
 
 /* weather widget (weather.js): under the clock and date, or on its own layer */
@@ -679,6 +707,34 @@ z-index:9999;
 #folderclose { width: 4.4vh; height: 4.4vh; padding: 0.7vh; font-family: inherit; color: rgb(255,255,255); background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); border-radius: 0.8vh; }
 #folderclose svg { display: block; width: 100%; height: 100%; fill: currentColor; }
 #folderclose:hover { background-color: rgba(var(--accent), 0.45); }
+/* the Rename window: same look as the folder window */
+#renamebackdrop { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 20000; background-color: rgba(0,0,0,0.55); }
+#renamebox {
+	display: none;
+	position: fixed;
+	top: 24vh;
+	left: 30vw;
+	width: 40vw;
+	box-sizing: border-box;
+	padding: 2vh 1.6vw;
+	z-index: 20001;
+	color: rgb(255,255,255);
+	background-color: rgba(18,18,24,0.97);
+	border: 2px solid rgba(var(--accent), 0.85);
+	border-radius: 1.6vh;
+}
+#maindiv.renameopen #renamebackdrop, #maindiv.renameopen #renamebox { display: block; }
+#renamehead { display: flex; align-items: center; gap: 1.2vw; margin-bottom: 2vh; }
+#renameappicon { flex: 0 0 auto; width: 6.4vh; height: 6.4vh; object-fit: cover; border-radius: 1vh; background-color: rgba(255,255,255,0.75); }
+#renameheadtext { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#renametitle { font-size: 2.8vh; overflow-wrap: anywhere; }
+#renameoriginal { margin-top: 0.3vh; font-size: 1.8vh; opacity: 0.7; }
+#renameclose { width: 4.4vh; height: 4.4vh; padding: 0.7vh; font-family: inherit; color: rgb(255,255,255); background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); border-radius: 0.8vh; }
+#renameclose svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+#renameclose:hover { background-color: rgba(var(--accent), 0.45); }
+#renameinput { width: 100%; box-sizing: border-box; }
+#renameactions { display: flex; gap: 0.8vw; margin-top: 1.6vh; }
+#renamemessage { margin-top: 1vh; min-height: 2vh; }
 /* one card per place the app can go */
 #folderlist { display: grid; grid-template-columns: 1fr 1fr; gap: 1vh 0.8vw; }
 .foldercard { display: flex; align-items: center; gap: 0.8vw; min-width: 0; padding: 1vh 1vw; text-align: left; font-size: 2.1vh; overflow-wrap: anywhere; }
