@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/TharaBhaiDoraemon/OpenLauncher/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/TharaBhaiDoraemon/OpenLauncher?include_prereleases&label=release&color=ff2d75"></a>
+  <a href="https://github.com/Shantil-K/OpenLauncher/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/Shantil-K/OpenLauncher?include_prereleases&label=release&color=ff2d75"></a>
   <img alt="webOS 6+" src="https://img.shields.io/badge/webOS-6%2B-2f80ed">
   <img alt="Tested on LG C2" src="https://img.shields.io/badge/tested%20on-LG%20C2-ff7a00">
   <a href="./LICENSE"><img alt="License: GPLv3" src="https://img.shields.io/badge/license-GPLv3-blue"></a>
@@ -107,6 +107,15 @@ Back closes the card.
 In **Settings > Wallpaper** you can switch the **Video source** to *Offline (built in)* to stop streaming and play only the
 local `loop.mp4`, to *My own* (below), or back to *Online (streamed)*.
 
+**Cold launch:** `<video id="bgvideo">` is the very first thing in `<body>`, with a tiny inline script right after it that starts
+`loop.mp4` immediately - ahead of every other `<script>` tag, which all live at the end of `index.html` now instead of `<head>`.
+Measured on a real TV, this alone cut the time from launch to a visible first frame from 2.6s to 1.7s: about half of that total
+used to be the browser fetching+parsing+executing 19 script files (and finishing the rest of `<body>`) before the `<video>`
+element could even exist. The other ~1s is the TV's hardware video decoder/plane warming up for the first time - that part held
+steady across the change (it's a platform floor, not a script-ordering cost), even for this local, unstreamed file. `startbackground()`
+(background.js) still runs once its script loads and decides the real Video source, same as before - it just no longer blocks
+the video's own head start on getting there.
+
 *My own* plays links you add, in random order: videos (`.mp4 .mov .mkv .webm .m4v .ts`) play through, photos
 (`.jpg .png .webp .gif .bmp .avif`) stay for 10 s to 1 min (your choice). Use `http://` or `https://` links, or `file://` links /
 absolute paths for files on the TV or a USB drive. A link that won't load is skipped, and if the list is empty or keeps failing
@@ -135,7 +144,7 @@ Picking a position for the clock, date or weather also fades the panel away for 
 - **Wallpaper**: where the wallpaper comes from: streamed online, built in, or your own links. For the online source, **Video sources** lists where the streamed videos come from and how many there are of each (Apple, Amazon and the community lists, 289 in all).
 - **Screen**: protection for OLED TVs, all off by default. **Pixel shift** nudges the clock, bar and buttons a few pixels every minute. **When idle after** 1 to 10 minutes without any input it dims the clock, date, weather, bar and buttons, or hides the bar and dims the rest; any input wakes it. **Dim level** (5 to 100%, 30% by default) sets how bright they stay, and a miniature screen beside it shows the result. The dimming darkens what is drawn instead of making it see-through, so it looks the same over the wallpaper and over the black moment between two videos.
 - **Backup**: **Export** your settings and app layout as JSON and **Import** them again. With root the backup is also written to and read from `/media/developer/openlauncher-settings.json` (**Load file**); without root it is shown in a text box.
-- **App info**: a system-information page for the launcher: its icon, release and package, when it was last updated, what it runs as (trusted app or root), whether a settings backup is saved (with root it looks for the backup file and shows its date), how many settings you changed and your layout, the wallpaper source, the screen resolution (the panel's real pixels, worked out from the page size, the pixel ratio, the screen size the browser and webOS report, and the TV's UHD flag, so a 4K TV that draws the page at 1920 x 1080 still says "3840 x 2160 (4K)"; **Page size** shows what the page is drawn at) and web engine, the TV's model and firmware, and the GitHub project (address, where to report a problem, licence). **Check for updates** asks GitHub for the newest release; the internet is only used when you press it. **Refresh** looks everything up again.
+- **App info**: a system-information page for the launcher: its icon, release and package, when it was last updated, what it runs as (trusted app or root), whether a settings backup is saved (with root it looks for the backup file and shows its date), how many settings you changed and your layout, the wallpaper source, the screen resolution (the panel's real pixels, worked out from the page size, the pixel ratio, the screen size the browser and webOS report, and the TV's UHD flag, so a 4K TV that draws the page at 1920 x 1080 still says "3840 x 2160 (4K)"; **Page size** shows what the page is drawn at) and web engine, the TV's model and firmware, and the GitHub project (address, where to report a problem, licence). **Check for updates** asks GitHub for the newest release; the internet is only used when you press it. **Refresh** looks everything up again. **Uninstall OpenLauncher** (needs trusted trustLevel or root) restores the stock Home screen first if it was replaced, then uninstalls the app - the one place in the launcher where uninstalling itself is allowed (Edit mode's own Uninstall button refuses to, on purpose, everywhere else).
 - **TV**: opens the TV's own settings (`com.palm.app.settings`), and resets the launcher settings to their defaults.
 
 To add a setting, add an item to `SETTINGS_SCHEMA` in `src/js/settings.js` (the panel, defaults and saving are generated from it),
@@ -201,7 +210,30 @@ If you update/install this app in webos then u would need to run this command an
 
 # Replace
 
-If you want it to replace your stock home screen then see [here](./src/access/replace).
+If you want it to replace your stock home screen (this also makes it launch on startup, since booting the TV
+normally shows Home), the easiest way is **Settings > TV > Replace stock Home** inside the launcher itself: the
+webOS version picker auto-detects itself (from whether `/usr/lib/qml/KeyFilters/systemUi.js` still hardcodes the
+stock Home app id) as soon as you open the tab, so just double check it and press **Apply**. It runs the matching
+script from `src/access/replace` through the root service and makes it persist across reboots, no SSH needed.
+Needs root; the button explains that if it's missing.
+
+The auto-detection can only tell "webOS 6-24" apart from "webOS 25 or newer" - not "25" from "25-26", since that
+split is about whether the OS actually honors a `setDefaultApp` call, which isn't something a file's contents can
+show. On the newer side it preselects **Default App (25-26)** as the least invasive thing to try first; if Apply
+doesn't do anything (Home still opens the stock screen), switch the picker to **25** and try again.
+
+**Uninstalling OpenLauncher does not undo this.** The persisted script lives in webosbrew's own `init.d`
+(outside OpenLauncher's app folder) and, for the webOS 25-26 method, the default Home app is a setting in the
+TV's own Luna DB - neither is part of what an uninstall removes, so the TV would be left trying to launch an app
+that's no longer there. Press **Restore stock Home** in the same panel before uninstalling; it undoes whichever
+method you used and puts the TV's own Home screen back. Or use **Settings > App info > Uninstall OpenLauncher**,
+which does the restore and the uninstall together, in that order.
+
+(App settings themselves - everything under Settings, your layout, pins, folders - do go away on uninstall like
+any app's storage, except a root backup file at `/media/developer/openlauncher-settings.json`, which is outside
+the app's own storage too and survives until removed by hand.)
+
+To do it manually instead (or if the in-app button doesn't work for your firmware), see [here](./src/access/replace).
 
 # License
 

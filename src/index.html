@@ -10,28 +10,21 @@
 
 
 <link rel="stylesheet" href="css/main.css">
-<script src="js/wallpaper.js"></script>
-<script src="js/aerials.js"></script>
-<script src="js/icons.js"></script>
-	<script src="js/lib/QwQwebosTV.js/main.js"></script>  
-<script src="js/clock.js"></script>
-<script src="js/settings.js"></script>
-<script src="js/preview.js"></script>
-<script src="js/backup.js"></script>
-<script src="js/folders.js"></script>
-<script src="js/systemapps.js"></script>
-<script src="js/rename.js"></script>
-<script src="js/about.js"></script>
-<script src="js/dpad.js"></script>
-<script src="js/weather.js"></script>
-<script src="js/background.js"></script>
-<script src="js/info.js"></script>
-<script src="js/screen.js"></script>
-<script src="js/main.js"></script>
 
 <body>
-	<!-- Wallpaper is a video (hardware decoded, unlike CSS background images), driven by startbackground() in main.js: network videos from aerials.js, then the local loop.mp4 from scripts/make-wallpaper-video.sh, then rotating images. -->
+	<!-- Wallpaper is a video (hardware decoded, unlike CSS background images), driven by startbackground() in background.js: network
+	     videos from aerials.js, then the local loop.mp4 from scripts/make-wallpaper-video.sh, then rotating images.
+
+	     Measured on-device: with all <script> tags in <head> (the old layout), the browser had to fetch+parse+execute all 19 of
+	     them, then finish parsing <body>, before this <video> element even existed - about 1.3s on a cold launch, before the
+	     hardware video decoder/plane had even been asked to start warming up (which itself then took another ~1s, even for this
+	     local, unstreamed file - see the Readme's Wallpaper section). Since #bgvideo is the very first thing in <body>, putting it
+	     ahead of every <script> tag (moved to the end of body below, a normal, safer place for them anyway) and starting it with
+	     this inline script - before any of those 19 files have even been requested - lets that hardware warm-up begin as early as
+	     the page can possibly make it happen, instead of serially after everything else. startbackground() still runs later, once
+	     background.js loads, and decides the real Video source (may leave this playing, or hand off to it) same as before. -->
 	<video id="bgvideo" autoplay muted playsinline></video>
+	<script>bgvideo.src="access/wallpaper/loop.mp4";bgvideo.play().catch(()=>{});</script>
 	<div id="prefetchmaindiv">
 	<!-- Hack : make appluncher always loaded (just hidden) so it can be faster when i open/close it -->
 	<div id="maindiv">
@@ -133,6 +126,26 @@
 
 	</div>
 	</div>
+
+<script src="js/wallpaper.js"></script>
+<script src="js/aerials.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/lib/QwQwebosTV.js/main.js"></script>
+<script src="js/clock.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/preview.js"></script>
+<script src="js/backup.js"></script>
+<script src="js/folders.js"></script>
+<script src="js/systemapps.js"></script>
+<script src="js/rename.js"></script>
+<script src="js/replacehome.js"></script>
+<script src="js/about.js"></script>
+<script src="js/dpad.js"></script>
+<script src="js/weather.js"></script>
+<script src="js/background.js"></script>
+<script src="js/info.js"></script>
+<script src="js/screen.js"></script>
+<script src="js/main.js"></script>
 </body>
 
 </html>

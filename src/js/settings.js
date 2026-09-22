@@ -102,10 +102,29 @@ const SETTINGS_SCHEMA=[
 	]},
 	{id:"tv",title:"TV",icon:"tv",items:[
 		{type:"action",label:"TV settings",hint:"Opens the TV's own settings",button:"Open",icon:"open",run:() => launchapp("com.palm.app.settings")},
-		{type:"action",label:"Reset launcher",hint:"Put every setting on this screen back to its default",button:"Reset",icon:"reset",confirm:"Are you sure?",confirmButton:"Yes, reset",run:() => resetprefs()}
+		{type:"action",label:"Reset launcher",hint:"Put every setting on this screen back to its default",button:"Reset",icon:"reset",confirm:"Are you sure?",confirmButton:"Yes, reset",run:() => resetprefs()},
+		{type:"heading",label:"Replace stock Home",show:(p) => rooted},
+		{key:"homeReplaceMethod",label:"webOS version",type:"choice",stepper:true,default:"sixto24",show:(p) => rooted,
+			options:[["sixto24","6–24"],["twentyfive","25"],["defaultapp","25–26"],["copilot","25–26 (copilot)"]],
+			hint:"Auto-detected from a system file when you open this tab, so it's usually already right - but it can only tell 6-24 apart from 25+, not 25 from 25-26, so double check against Settings > App info > Firmware (or the TV's own Settings > Support > About this TV) if Apply doesn't do anything. Picking the wrong one just fails to do anything useful; it doesn't need to be undone before trying another."},
+		{type:"action",label:"Bind Home + auto-start",button:"Apply",icon:"open",show:(p) => rooted,
+			confirm:"This patches a system file (or sets the default Home app) for the version picked above, and restarts the system UI. Continue?",confirmButton:"Yes, apply",
+			run:() => applyhomereplace()},
+		{type:"action",label:"Restore stock Home",hint:"Undoes Bind Home + auto-start (any version). Do this before uninstalling OpenLauncher - uninstalling alone does not put stock Home back.",
+			button:"Restore",icon:"reset",show:(p) => rooted,
+			confirm:"This puts the TV's stock Home screen back and restarts the system UI. Continue?",confirmButton:"Yes, restore",
+			run:() => restorehome()},
+		{label:"Result",type:"custom",wide:true,nolabel:true,show:(p) => rooted,render:(box) => renderhomereplace(box)},
+		{label:"Replace stock Home",type:"custom",wide:true,nolabel:true,show:(p) => !rooted,
+			render:(box) => box.appendChild(el("div","sstatus","Needs root (Homebrew Channel). See the Readme's Replace section to do it manually over SSH instead."))}
 	]},
 	{id:"about",title:"App info",icon:"info",items:[
-		{label:"App info",type:"custom",wide:true,nolabel:true,render:(box) => renderabout(box)}
+		{label:"App info",type:"custom",wide:true,nolabel:true,render:(box) => renderabout(box)},
+		{type:"heading",label:"Uninstall",show:(p) => turstedapp || rooted},
+		{type:"action",label:"Uninstall OpenLauncher",button:"Uninstall",icon:"trash",show:(p) => turstedapp || rooted,
+			confirm:"This uninstalls OpenLauncher (and first restores the stock Home screen, if it was replaced). Continue?",confirmButton:"Yes, uninstall",
+			run:() => selfuninstall()},
+		{label:"Uninstall result",type:"custom",wide:true,nolabel:true,show:(p) => turstedapp || rooted,render:(box) => renderuninstall(box)}
 	]}
 ];
 
@@ -430,6 +449,7 @@ function renderpane(){
 			settingstab=s.id;
 			settingspane.scrollTop=0;
 			sethint("");
+			if(s.id==="tv"){ detecthomemethod(); }
 			renderpane();
 		});
 		settingstabs.appendChild(tab);

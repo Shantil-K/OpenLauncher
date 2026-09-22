@@ -4,8 +4,8 @@
 // wallpaper, the screen, the TV, and the GitHub project. Some facts need the TV (model, firmware) or root (the backup file),
 // or the internet (the latest release, only when you press Check for updates); those say so when they are not available.
 
-const APP_RELEASE="0.7.1-beta";       // the GitHub release this build belongs to; change it with each release
-const GITHUB_REPO="TharaBhaiDoraemon/OpenLauncher";
+const APP_RELEASE="0.7.2-beta";       // the GitHub release this build belongs to; change it with each release
+const GITHUB_REPO="Shantil-K/OpenLauncher";
 const GITHUB_API="https://api.github.com/repos/"+GITHUB_REPO+"/releases?per_page=1";   // per_page=1 of ALL releases: "latest" skips pre-releases
 const LAST_BACKUP_KEY='openlauncher.lastbackup';
 const ABOUT_APP_ID="com.homebrew.openlauncher";

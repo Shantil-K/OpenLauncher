@@ -423,6 +423,10 @@ var rootcheck=await lunacall('luna://org.webosbrew.hbchannel.service/getConfigur
 		rooted=false;
 	}
 
+if (rooted){
+	detecthomemethod();   // Settings > TV > webOS version: get this ready before Settings is ever opened
+}
+
 if (noappperm && rooted){
 await iconhack(appdir);
 }
