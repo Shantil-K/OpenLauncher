@@ -13,13 +13,13 @@ const SYSTEM_FOLDERS=[
 		"com.webos.app.livetv","com.webos.app.livemenu","com.webos.app.recordings","com.webos.app.scheduler",
 		"com.webos.app.channeledit","com.webos.app.channelsetting"]},
 	{id:"sys-settings",name:"Settings",ids:[
-		"com.palm.app.settings","com.webos.app.softwareupdate","com.webos.app.picturewizard","com.webos.app.soundwizard",
+		"com.palm.app.settings","com.webos.app.picturewizard","com.webos.app.soundwizard",
 		"com.webos.app.onetouchsoundtuning","com.webos.app.soundbar-setting","com.webos.app.gameoptimizer",
 		"com.webos.app.familycare","com.webos.app.notificationcenter","com.webos.app.weatherlocation",
-		"com.webos.app.connectionwizard","com.webos.app.screensaver","com.webos.app.membership"]},
+		"com.webos.app.connectionwizard","com.webos.app.membership"]},
 	{id:"sys-sharing",name:"Sharing",ids:[
-		"com.webos.app.miracast","airplay","com.webos.chromecast","com.webos.app.hdmioptical","com.webos.app.btspeakerapp",
-		"com.webos.app.leaudio","com.webos.app.rdp","com.webos.app.homeoffice","com.webos.app.appcasting"]},
+		"com.webos.app.miracast","com.webos.app.hdmioptical","com.webos.app.btspeakerapp",
+		"com.webos.app.leaudio","com.webos.app.rdp","com.webos.app.homeoffice"]},
 	{id:"sys-help",name:"Help",ids:[
 		"com.webos.app.tvuserguide","com.webos.app.helpandtips","com.webos.app.remotecontrolguide",
 		"com.webos.app.customersupport","com.webos.app.self-diagnosis"]}

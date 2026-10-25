@@ -77,8 +77,9 @@ const SETTINGS_SCHEMA=[
 			["80,220,230","Cyan"],["90,170,255","Blue"],["170,120,255","Purple"],["255,255,255","White"]]}
 	]},
 	{id:"wallpaper",title:"Wallpaper",icon:"wallpaper",items:[
-		{key:"videoSource",label:"Video source",type:"choice",default:"online",cards:true,options:[["online","Online","cloud"],["offline","Built in","drive"],["custom","My own","photo"]],
-			hint:"Online streams about 2.7 GB per hour. Offline plays the video built into the launcher. My own plays the links you add below."},
+		{key:"videoSource",label:"Video source",type:"choice",default:"online",cards:true,
+			options:[["online","Online","cloud"],["offline","Built in","drive"],["custom","My own","photo"],["picture","Picture","photo"]],
+			hint:"Online streams about 2.7 GB per hour. Offline plays the video built into the launcher. My own plays the links you add below. Picture is a single fixed photo, picked below - no video at all, so nothing to buffer or decode."},
 		{label:"Video sources",type:"custom",wide:true,show:(p) => p.videoSource==="online",
 			hint:"Where the streamed videos come from and how many there are of each. The list is from couchy-launcher; the videos stay on their own servers.",
 			render:(box) => rendersources(box)},
@@ -86,7 +87,11 @@ const SETTINGS_SCHEMA=[
 			hint:"Links to videos (.mp4 .mov .mkv .webm) and photos (.jpg .png .webp). They play in random order.",
 			valid:(v) => Array.isArray(v) && v.length<=CUSTOM_MAX && v.every(validcustomurl),
 			render:(box) => renderwallpaperlist(box)},
-		{key:"customSeconds",label:"Photo time",type:"choice",default:20,options:[[10,"10 s"],[20,"20 s"],[30,"30 s"],[60,"1 min"]],show:(p) => p.videoSource==="custom"}
+		{key:"customSeconds",label:"Photo time",type:"choice",default:20,options:[[10,"10 s"],[20,"20 s"],[30,"30 s"],[60,"1 min"]],show:(p) => p.videoSource==="custom"},
+		{key:"pictureChoice",label:"Picture",type:"custom",wide:true,default:null,show:(p) => p.videoSource==="picture",
+			hint:"Pick one of the launcher's built-in photos to use as a fixed wallpaper.",
+			valid:(v) => v===null || (typeof wallpapers!=="undefined" && wallpapers.indexOf(v)!==-1),
+			render:(box) => renderpicturepicker(box)}
 	]},
 	{id:"screen",title:"Screen",icon:"monitor",items:[
 		{key:"pixelShift",label:"Pixel shift",type:"choice",default:0,options:[[0,"Off"],[1,"Small"],[2,"Large"]],

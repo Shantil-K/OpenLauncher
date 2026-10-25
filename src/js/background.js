@@ -14,6 +14,7 @@ let imageswap=null;
 function startimagewallpapers() {
 	if(imagewallpapers){ return; }
 	stopcustom();
+	stoppicture();
 	imagewallpapers=true;
 	bgmode="images";
 	bgvideo.style.display="none";
@@ -42,6 +43,40 @@ function stopimagewallpapers() {
 	bgvideo.style.display="";
 }
 
+// ---- picture: one of the launcher's built-in photos, picked on screen (Settings > Wallpaper > Picture) and left
+// fixed - no video element involved at all, so nothing to buffer or decode, and no hardware video-plane cost either
+function picturefile() {
+	const list=(typeof wallpapers!=="undefined")?wallpapers:[];
+	return (prefs.pictureChoice && list.indexOf(prefs.pictureChoice)!==-1)?prefs.pictureChoice:list[0];
+}
+
+function startpicture() {
+	stopimagewallpapers();
+	stopcustom();
+	bgmode="picture";
+	bgvideo.pause();
+	clearbgvideosource();
+	bgvideo.load();
+	bgvideo.style.display="none";
+	const file=picturefile();
+	if(!file){ return; }   // no built-in photos in this build; stays on a plain black background
+	const preload=new Image();
+	preload.src='access/wallpaper/'+file;
+	preload.decode().catch(()=>{}).then(() => {
+		if(bgmode!=="picture"){ return; }   // a setting changed while this was decoding
+		bgpicture.src=preload.src;
+		bgpicture.style.display="block";
+	});
+}
+
+// leave the picture so a video can play again
+function stoppicture() {
+	if(bgmode!=="picture"){ return; }
+	bgpicture.style.display="none";
+	bgpicture.removeAttribute("src");
+	bgvideo.style.display="";
+}
+
 // ---- state shared by the sources
 let bgmode="aerials";        // aerials | local | custom | images: what is really playing
 let bgstarted=false;
@@ -55,6 +90,28 @@ const APPLE_HTTPS=/^https:\/\/sylvan\.apple\.com\//;
 // access/wallpaper/loop.mp4 is one still per wallpaper, this many seconds each (SECS in scripts/make-wallpaper-video.sh)
 const LOCAL_SEGMENT_SECONDS=20;
 const LOOP_EARLY_SECONDS=0.3;         // jump back this long before the end of a repeated built-in wallpaper (timeupdate is not exact)
+
+// ---- starting the local loop at a random point without webOS's media pipeline buffering twice: normally,
+// loading a video then setting currentTime makes it buffer from 0, then buffer again from the seek target
+// (see https://webostv.developer.lge.com/develop/guides/resuming-media-with-mediaoption). mediaOption's
+// transmission.playTime.start goes straight to the target instead, but it has to be known before the source is
+// even set - so the first play of the local loop still measures the duration the old way (and caches it), and
+// every one after that picks the random point up front and hands it to the pipeline directly.
+const LOCAL_DURATION_KEY='openlauncher.localvideoduration';
+let localstartset=false;      // true once this local-loop play already got its start point via mediaOption
+
+function clearbgvideosource() {
+	while(bgvideo.firstChild){ bgvideo.removeChild(bgvideo.firstChild); }
+	bgvideo.removeAttribute("src");
+}
+
+function mediaoptionsource(url,startseconds) {
+	const source=document.createElement("source");
+	const options={option:{transmission:{playTime:{start:Math.round(startseconds*1000)}}}};
+	source.setAttribute("type","video/mp4;mediaOption="+encodeURIComponent(JSON.stringify(options)));
+	source.setAttribute("src",url);
+	return source;
+}
 
 function shuffled(list) {
 	const copy=list.slice();
@@ -106,6 +163,7 @@ function loadaerial(entry) {
 	bglasttime=-1;
 	bgloop=false;
 	bgvideo.loop=false;
+	clearbgvideosource();
 	bgvideo.src=applehttp?entry.u.replace(APPLE_HTTPS,"http://sylvan.apple.com/"):entry.u;
 	bgvideo.play().catch(()=>{});
 }
@@ -121,6 +179,7 @@ function nextaerial() {
 function startaerials() {
 	stopimagewallpapers();
 	stopcustom();
+	stoppicture();
 	bgmode="aerials";
 	bgerrors=0;
 	nextaerial();
@@ -130,10 +189,23 @@ function startaerials() {
 function startlocalvideo() {
 	stopimagewallpapers();
 	stopcustom();
+	stoppicture();
 	bgmode="local";
 	bgloop=false;
 	bgvideo.loop=true;
-	bgvideo.src="access/wallpaper/loop.mp4";
+	clearbgvideosource();
+	let cached=null;
+	try { cached=parseFloat(localStorage.getItem(LOCAL_DURATION_KEY)); } catch(e) {}
+	if(isFinite(cached) && cached>0){
+		localstartset=true;
+		bgvideo.appendChild(mediaoptionsource("access/wallpaper/loop.mp4",Math.random()*cached));
+		bgvideo.load();
+	} else {
+		// no cached duration yet (first run, or the file changed): the old load-then-seek path, which measures
+		// and caches the duration in onloadedmetadata below so next time can skip straight to mediaOption
+		localstartset=false;
+		bgvideo.src="access/wallpaper/loop.mp4";
+	}
 	bgvideo.play().catch(()=>{});
 }
 
@@ -187,6 +259,7 @@ function startcustom() {
 		return;
 	}
 	stopimagewallpapers();
+	stoppicture();
 	clearTimeout(customtimer);
 	bgmode="custom";
 	bgerrors=0;
@@ -211,6 +284,7 @@ function nextcustom() {
 		bgvideo.style.display="";
 		bglasttime=-1;
 		bgvideo.loop=false;
+		clearbgvideosource();
 		bgvideo.src=url;
 		bgvideo.play().catch(()=>{});
 	} else {
@@ -247,6 +321,7 @@ function customfailed() {
 function wantedsource() {
 	if(prefs.videoSource==="offline"){ return "offline"; }
 	if(prefs.videoSource==="custom" && prefs.customUrls.some(validcustomurl)){ return "custom"; }
+	if(prefs.videoSource==="picture"){ return "picture"; }
 	return "online";
 }
 
@@ -255,6 +330,8 @@ function startsource(kind) {
 		startlocalvideo();
 	} else if(kind==="custom"){
 		startcustom();
+	} else if(kind==="picture"){
+		startpicture();
 	} else if(typeof aerials!=="undefined" && aerials.length){
 		startaerials();
 	} else {
@@ -266,7 +343,7 @@ function startsource(kind) {
 function applybackgroundsource() {
 	if(!bgstarted){ return; }
 	const kind=wantedsource();
-	const signature=kind==="custom"?kind+JSON.stringify(prefs.customUrls):kind;
+	const signature=kind==="custom"?kind+JSON.stringify(prefs.customUrls):kind==="picture"?kind+prefs.pictureChoice:kind;
 	if(signature===lastsource){ return; }
 	lastsource=signature;
 	startsource(kind);
@@ -282,6 +359,9 @@ function nowplaying() {
 	}
 	if(bgmode==="local"){
 		return {name:"Built-in wallpaper loop",source:"Offline (built into the launcher)",video:true};
+	}
+	if(bgmode==="picture"){
+		return {name:picturefile() || "Picture",source:"Your choice (Settings > Wallpaper)",video:false};
 	}
 	return {name:"Rotating pictures",source:"Offline (built into the launcher)",video:false};
 }
@@ -329,7 +409,12 @@ function startbackground() {
 		if(bgmode==="aerials"){ nextaerial(); } else if(bgmode==="custom"){ nextcustom(); }
 	};
 	bgvideo.onloadedmetadata=() => {
-		if(bgmode==="local" && isFinite(bgvideo.duration)){ bgvideo.currentTime=Math.random()*bgvideo.duration; }
+		if(bgmode!=="local" || !isFinite(bgvideo.duration)){ return; }
+		try { localStorage.setItem(LOCAL_DURATION_KEY,String(bgvideo.duration)); } catch(e) {}
+		if(!localstartset){
+			localstartset=true;
+			bgvideo.currentTime=Math.random()*bgvideo.duration;
+		}
 	};
 	// don't stream or decode while another app is in front
 	document.addEventListener("visibilitychange",() => {
@@ -351,7 +436,7 @@ function startbackground() {
 	},30*1000);
 	bgstarted=true;
 	const kind=wantedsource();
-	lastsource=kind==="custom"?kind+JSON.stringify(prefs.customUrls):kind;
+	lastsource=kind==="custom"?kind+JSON.stringify(prefs.customUrls):kind==="picture"?kind+prefs.pictureChoice:kind;
 	startsource(kind);
 }
 
@@ -377,6 +462,38 @@ function addcustomwallpaper() {
 		return;
 	}
 	renderpane();
+}
+
+// the built-in photos, as clickable thumbnails; picking one sets prefs.pictureChoice
+// the full-size photos are real camera photos (up to 5.6 MB, 4640x3472) - fine as a single fixed background, but
+// rendering all 18 at once in this grid was heavy. access/wallpaper/thumbs/ holds a small (320px-wide JPEG, a few
+// KB each) preview copy of each one, same basename with a lowercase .jpg extension regardless of the original's;
+// the picker only ever displays these, and only the full-size original (picturefile(), unchanged) is ever used as
+// the actual wallpaper.
+function thumbpath(file) {
+	return "access/wallpaper/thumbs/"+file.replace(/\.[^.]+$/,"")+".jpg";
+}
+
+function renderpicturepicker(box) {
+	const list=(typeof wallpapers!=="undefined")?wallpapers:[];
+	if(list.length===0){
+		box.appendChild(el("div","sstatus","No built-in photos found in this build."));
+		return;
+	}
+	const chosen=picturefile();
+	const grid=el("div","picturepicker");
+	list.forEach((file) => {
+		const btn=el("button","picturepick"+(file===chosen?" on":""));
+		const img=document.createElement("img");
+		img.src=thumbpath(file);
+		img.alt="";
+		btn.appendChild(img);
+		btn.setAttribute("title",file);
+		btn.setAttribute("aria-label",file);
+		btn.addEventListener("click",() => setpref("pictureChoice",file));
+		grid.appendChild(btn);
+	});
+	box.appendChild(grid);
 }
 
 function renderwallpaperlist(box) {

@@ -116,10 +116,43 @@ steady across the change (it's a platform floor, not a script-ordering cost), ev
 (background.js) still runs once its script loads and decides the real Video source, same as before - it just no longer blocks
 the video's own head start on getting there.
 
+The local loop also starts at a random point (so it isn't the same wallpaper on every launch), which used to mean loading
+`loop.mp4` from the start, then seeking - webOS's media pipeline buffers once for the load and again for the seek target
+(see [Resuming Media Quickly with mediaOption](https://webostv.developer.lge.com/develop/guides/resuming-media-with-mediaoption)).
+Once the file's duration has been measured once (cached in localStorage), later launches pick the random point up front and
+hand it straight to the pipeline via `mediaOption`'s `transmission.playTime.start`, skipping the double buffer. Measured
+on a real TV: roughly 250-450ms saved on that specific window (noisier than the launch-order fix above, but consistent
+across repeated runs). The very first-ever launch (nothing cached yet) still measures the duration the old way.
+
 *My own* plays links you add, in random order: videos (`.mp4 .mov .mkv .webm .m4v .ts`) play through, photos
 (`.jpg .png .webp .gif .bmp .avif`) stay for 10 s to 1 min (your choice). Use `http://` or `https://` links, or `file://` links /
 absolute paths for files on the TV or a USB drive. A link that won't load is skipped, and if the list is empty or keeps failing
 the online videos play instead.
+
+*Picture* is a single fixed photo instead of a video: pick one on screen from a grid of the launcher's own built-in
+photos (Settings > Wallpaper > Picture) and it stays put - no rotation, no `<video>` element involved at all, so
+there's no streaming, buffering, or hardware video-decoder warm-up to wait on. Loop and Skip aren't offered for it
+in the "Now playing" card, same as any still photo.
+
+The picker shows a small preview (`access/wallpaper/thumbs/`, ~5-10 KB each, generated from the originals - not
+committed by hand, see below) instead of the full photos: at up to 5.6 MB and 4640x3472 each, rendering all 18 at
+once made the picker itself heavy. Picking one still uses the full-resolution original as the actual wallpaper -
+only the picker's preview is downscaled, never what's actually displayed. Regenerate the thumbnails after adding
+or replacing a wallpaper photo:
+```
+$ cd src/access/wallpaper
+$ python3 -c "
+from PIL import Image
+import os
+os.makedirs('thumbs', exist_ok=True)
+for f in os.listdir('.'):
+    if os.path.isfile(f) and f.lower().endswith(('.jpg', '.jpeg', '.png')):
+        img = Image.open(f).convert('RGB')
+        w, h = img.size
+        img.resize((320, round(320 * h / w)), Image.LANCZOS).save(
+            'thumbs/' + os.path.splitext(f)[0] + '.jpg', 'JPEG', quality=72, optimize=True)
+"
+```
 
 To refresh the aerial list:
 
