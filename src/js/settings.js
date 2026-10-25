@@ -125,6 +125,11 @@ const SETTINGS_SCHEMA=[
 	]},
 	{id:"about",title:"App info",icon:"info",items:[
 		{label:"App info",type:"custom",wide:true,nolabel:true,render:(box) => renderabout(box)},
+		{type:"heading",label:"Update"},
+		{type:"action",label:"Install update",button:"Update",icon:"download",show:(p) => rooted,run:() => installupdate()},
+		{label:"Update status",type:"custom",wide:true,nolabel:true,show:(p) => rooted,render:(box) => renderupdate(box)},
+		{label:"Install update",type:"custom",wide:true,nolabel:true,show:(p) => !rooted,
+			render:(box) => box.appendChild(el("div","sstatus","Updating from here needs root (Homebrew Channel). Without it, install the newest .ipk from GitHub yourself."))},
 		{type:"heading",label:"Uninstall",show:(p) => turstedapp || rooted},
 		{type:"action",label:"Uninstall OpenLauncher",button:"Uninstall",icon:"trash",show:(p) => turstedapp || rooted,
 			confirm:"This uninstalls OpenLauncher (and first restores the stock Home screen, if it was replaced). Continue?",confirmButton:"Yes, uninstall",

@@ -4,7 +4,7 @@
 // wallpaper, the screen, the TV, and the GitHub project. Some facts need the TV (model, firmware) or root (the backup file),
 // or the internet (the latest release, only when you press Check for updates); those say so when they are not available.
 
-const APP_RELEASE="1.0.0";       // the GitHub release this build belongs to; change it with each release
+const APP_RELEASE="1.0.1";       // the GitHub release this build belongs to; change it with each release
 const GITHUB_REPO="Shantil-K/OpenLauncher";
 const GITHUB_API="https://api.github.com/repos/"+GITHUB_REPO+"/releases?per_page=1";   // per_page=1 of ALL releases: "latest" skips pre-releases
 const LAST_BACKUP_KEY='openlauncher.lastbackup';
@@ -159,7 +159,7 @@ function aboutsections() {
 	const streamed=(typeof aerials!=="undefined")?aerials:[];
 	const sources={};
 	streamed.forEach((video) => { sources[video.s]=true; });
-	const source={online:"Online (streamed)",offline:"Offline (built in)",custom:"My own"}[prefs.videoSource] || prefs.videoSource;
+	const source={online:"Online (streamed)",offline:"Offline (built in)",custom:"My own",picture:"Picture"}[prefs.videoSource] || prefs.videoSource;
 	const playing=(typeof nowplaying==="function")?nowplaying().name:"";
 	const tv=about.tv;
 	const sysfolders=settings.folders.filter((folder) => issystemfolder(folder.id)).length;
@@ -224,6 +224,13 @@ function renderabout(box) {
 	head.appendChild(title);
 	const actions=el("div","aboutactions");
 	actions.appendChild(optionbutton("Check for updates",false,() => checkupdates(),"download"));
+	// a newer release was found and this TV can install it itself (update.js)
+	if(rooted && about.release.state==="ok" && compareversions(about.release.tag,APP_RELEASE)>0){
+		const busy={checking:"Checking...",downloading:"Downloading...",verifying:"Checking file...",installing:"Installing...",installed:"Reopening..."}[updatestate.step];
+		const update=optionbutton(busy || "Update to "+about.release.tag,false,() => installupdate(),"download");
+		update.classList.add("on");
+		actions.appendChild(update);
+	}
 	actions.appendChild(optionbutton("Refresh",false,() => {
 		about.tv=undefined;
 		about.backupfile=undefined;
