@@ -27,7 +27,10 @@
 </p>
 
 <p align="center">
-  <img src="demo.png" alt="OpenLauncher on an LG C2" width="800">
+  <a href="https://github.com/Shantil-K/OpenLauncher/releases/download/v1.0.1/OpenLauncher-demo.mp4">
+    <img src="docs/demo.webp" alt="OpenLauncher demo: video wallpaper, folders, remote control, settings and self-update" width="800">
+  </a><br>
+  <a href="https://github.com/Shantil-K/OpenLauncher/releases/download/v1.0.1/OpenLauncher-demo.mp4"><b>▶ Watch the full demo (1:46)</b></a>
 </p>
 
 # Features
