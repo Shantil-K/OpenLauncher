@@ -1,0 +1,69 @@
+# Builds the .ipk and publishes a GitHub release whenever a version tag (v1.2.3 or v1.2.3-beta) is pushed.
+# The tag, "version" in src/appinfo.json and APP_RELEASE in src/js/about.js must all match
+# (scripts/set-version.sh sets the last two). Tags with a -suffix are published as pre-releases.
+# Release notes come from .github/release-notes/<tag>.md, or are generated from commits if that file is missing.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: # run by hand to test the build; it publishes nothing
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install webOS CLI and ffmpeg
+        run: |
+          npm install -g @webos-tools/cli@3.2.6
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Check the versions match
+        run: |
+          app=$(node -p "require('./src/appinfo.json').version")
+          rel=$(sed -nE 's/^const APP_RELEASE="([^"]*)";.*/\1/p' src/js/about.js)
+          echo "appinfo.json: $app, about.js: $rel, ref: $GITHUB_REF_NAME"
+          if [ "$app" != "$rel" ]; then
+            echo "::error::src/appinfo.json says $app but APP_RELEASE in src/js/about.js says $rel (use scripts/set-version.sh)"
+            exit 1
+          fi
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "v$app" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::the app says $app but the tag is $GITHUB_REF_NAME"
+            exit 1
+          fi
+
+      - name: Check scripts
+        run: for f in src/js/*.js; do node --check "$f"; done
+
+      - name: Build the 4K wallpaper video
+        run: bash scripts/make-wallpaper-video.sh
+
+      - name: Build ipk
+        run: ares-package src -o .
+
+      - name: Keep the build (manual runs)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ipk
+          path: com.homebrew.openlauncher_*_all.ipk
+
+      - name: Publish release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes=".github/release-notes/$GITHUB_REF_NAME.md"
+          if [ -f "$notes" ]; then set -- --notes-file "$notes"; else set -- --generate-notes; fi
+          case "$GITHUB_REF_NAME" in *-*) set -- "$@" --prerelease;; esac
+          gh release create "$GITHUB_REF_NAME" com.homebrew.openlauncher_*_all.ipk \
+            --title "OpenLauncher $GITHUB_REF_NAME" "$@"
