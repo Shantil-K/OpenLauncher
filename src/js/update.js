@@ -5,26 +5,40 @@
 // for the file, install it with the TV's own installer, then start the launcher again. The script writes each step
 // to a status file, which this page reads every couple of seconds to show progress and errors.
 
-const UPDATE_STATUS_FILE="/tmp/openlauncher-update.status";
-const UPDATE_SCRIPT_FILE="/tmp/openlauncher-update.sh";
-const UPDATE_IPK_FILE="/tmp/openlauncher-update.ipk";
+// The release must be signed. scripts/sign-release.sh signs each release's .ipk with a key that never leaves the
+// maintainer's computer (not GitHub, not the build), and uploads the signature as <file>.ipk.sig. The TV checks it against
+// the public key below with openssl before installing. So even someone who took over the GitHub account or the build
+// couldn't get the TV to install their own .ipk: they don't have the key. Unsigned releases are not installed.
+const UPDATE_PUBLIC_KEY=[
+	"-----BEGIN PUBLIC KEY-----",
+	"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE+xfaUnFF6xvxFvGlTk1DirHnaQHx",
+	"ntIJ1GoGuTNYQqGukrN4Mg/ObLkxr06w0TCmNr0u/7Xyom/VL1Qo+wTAjA==",
+	"-----END PUBLIC KEY-----",
+	""
+].join("\n");
 const UPDATE_FLAG_KEY="openlauncher.updatingto";   // the tag being installed, so the next launch can say it worked
 const UPDATE_URL_OK=new RegExp("^https://github\\.com/"+GITHUB_REPO.replace(/[.]/g,"\\.")+"/releases/download/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+\\.ipk$");
+const UPDATE_DIR_OK=/^\/tmp\/openlauncher-update\.[A-Za-z0-9]+$/;
 
-// $1 = download link, $2 = sha256 (both checked in installupdate() before they get here)
+// Runs as root, in its own folder that only root can open (made with mktemp, see installupdate): nothing in /tmp that
+// another app could have put there or could change while it runs. $1 = the .ipk link, $2 = its sha256, $3 = the
+// signature's link (all checked in installupdate() before they get here). The public key is next to it, in key.pem.
 const UPDATE_SCRIPT=[
 	"#!/bin/sh",
-	"S="+UPDATE_STATUS_FILE,
-	"F="+UPDATE_IPK_FILE,
-	"rm -f \"$F\"",
+	"W=$(dirname \"$0\")",
+	"S=\"$W/status\"",
+	"F=\"$W/update.ipk\"",
+	"G=\"$W/update.sig\"",
+	"get () { curl --proto '=https' --proto-redir '=https' -fsSL --retry 2 --max-filesize 300000000 -o \"$2\" \"$1\"; }",
 	"echo downloading > \"$S\"",
-	"if ! curl -fsSL --retry 2 -o \"$F\" \"$1\"; then echo 'failed:download' > \"$S\"; rm -f \"$F\"; exit 1; fi",
+	"if ! get \"$1\" \"$F\" || ! get \"$3\" \"$G\"; then echo 'failed:download' > \"$S\"; rm -f \"$F\" \"$G\"; exit 1; fi",
 	"echo verifying > \"$S\"",
 	"if [ \"$(sha256sum \"$F\" | cut -d' ' -f1)\" != \"$2\" ]; then echo 'failed:checksum' > \"$S\"; rm -f \"$F\"; exit 1; fi",
+	"if ! command -v openssl >/dev/null || ! openssl dgst -sha256 -verify \"$W/key.pem\" -signature \"$G\" \"$F\" >/dev/null 2>&1; then echo 'failed:signature' > \"$S\"; rm -f \"$F\"; exit 1; fi",
 	"echo installing > \"$S\"",
 	// the installer keeps its subscription open after it reports "installed", so its output goes to a file that is
 	// watched here, and luna-send is stopped as soon as the result shows up (up to 5 minutes)
-	"L=/tmp/openlauncher-update.log",
+	"L=\"$W/install.log\"",
 	"luna-send -w 300000 -i luna://com.webos.appInstallService/dev/install '{\"id\":\"com.ares.defaultName\",\"ipkUrl\":\"'\"$F\"'\",\"subscribe\":true}' > \"$L\" 2>&1 &",
 	"P=$!",
 	"R=fail",
@@ -37,7 +51,7 @@ const UPDATE_SCRIPT=[
 	"done",
 	"grep -q '\"state\":\"installed\"' \"$L\" && R=ok",
 	"kill $P 2>/dev/null",
-	"rm -f \"$F\" \"$L\"",
+	"rm -f \"$F\" \"$G\" \"$L\"",
 	"if [ $R != ok ]; then echo 'failed:install' > \"$S\"; exit 1; fi",
 	"echo installed > \"$S\"",
 	"sleep 2",
@@ -48,6 +62,7 @@ const UPDATE_SCRIPT=[
 // idle | checking | uptodate | downloading | verifying | installing | installed | failed (+ why)
 let updatestate={step:"idle"};
 let updatepoll=null;
+let updatedir=null;       // the private folder the running update works in
 
 // "1.2.0" vs "1.10.0-beta": compares the numbers; a version with a -suffix counts as older than the same one without
 function compareversions(a,b) {
@@ -79,7 +94,9 @@ function updatefailtext() {
 		root:"Couldn't start the update. Make sure Homebrew Channel's root service is working.",
 		download:"The download from GitHub failed. Check the internet connection and try again.",
 		checksum:"The downloaded file didn't match GitHub's checksum, so it wasn't installed. Try again.",
-		install:"The TV refused to install "+tag+". Try installing it from Homebrew Channel instead."
+		install:"The TV refused to install "+tag+". Try installing it from Homebrew Channel instead.",
+		signature:tag+" isn't signed by OpenLauncher's key (or the signature doesn't match), so it wasn't installed.",
+		unsigned:tag+" isn't signed yet, so it wasn't installed. Try again a little later."
 	}[updatestate.why] || "The update failed.";
 }
 
@@ -89,11 +106,14 @@ async function fetchlatestrelease() {
 	const list=await response.json();
 	const latest=Array.isArray(list)?list[0]:null;
 	if(!latest || !latest.tag_name){ throw new Error("no release"); }
-	const asset=(latest.assets || []).filter((each) => /\.ipk$/.test(each.name || ""))[0];
+	const assets=latest.assets || [];
+	const asset=assets.filter((each) => /\.ipk$/.test(each.name || ""))[0];
+	const signature=asset?assets.filter((each) => each.name===asset.name+".sig")[0]:null;
 	about.release={state:"ok",tag:latest.tag_name,date:latest.published_at,pre:!!latest.prerelease};
 	return {
 		tag:latest.tag_name,
 		url:asset?asset.browser_download_url:null,
+		sigurl:signature?signature.browser_download_url:null,
 		mb:asset && asset.size>0?Math.round(asset.size/1048576):0,
 		sha256:asset && /^sha256:[0-9a-f]{64}$/.test(asset.digest || "")?asset.digest.slice(7):null
 	};
@@ -118,14 +138,22 @@ async function installupdate() {
 		setupdatestate({step:"failed",why:"asset",tag:latest.tag});
 		return;
 	}
+	if(!latest.sigurl || latest.sigurl!==latest.url+".sig"){
+		setupdatestate({step:"failed",why:"unsigned",tag:latest.tag});
+		return;
+	}
 	try { localStorage.setItem(UPDATE_FLAG_KEY,latest.tag); } catch(e) {}
 	setupdatestate({step:"downloading",tag:latest.tag,mb:latest.mb});
-	// the script goes over as base64, so no quote in it can break the command it's wrapped in
-	const command="rm -f "+UPDATE_STATUS_FILE+"; echo "+btoa(UPDATE_SCRIPT)+" | base64 -d > "+UPDATE_SCRIPT_FILE+" && "+
-		"setsid sh "+UPDATE_SCRIPT_FILE+" '"+latest.url+"' "+latest.sha256+" >/dev/null 2>&1 </dev/null &";
+	// a new folder only root can open (mktemp makes it, so nothing can be waiting there), with the script and the key
+	// in it. Both go over as base64, so no quote in them can break the command they're wrapped in.
 	let result;
 	try {
-		result=await execasroot(command);
+		const made=await execasroot("umask 077; mktemp -d /tmp/openlauncher-update.XXXXXX");
+		const dir=String((made && made.stdoutString) || "").trim();
+		if(!UPDATE_DIR_OK.test(dir)){ throw new Error("no folder"); }
+		updatedir=dir;
+		result=await execasroot("cd "+dir+" && echo "+btoa(UPDATE_SCRIPT)+" | base64 -d > run.sh && echo "+btoa(UPDATE_PUBLIC_KEY)+" | base64 -d > key.pem && "+
+			"echo starting > status && setsid sh "+dir+"/run.sh "+shellquote(latest.url)+" "+latest.sha256+" "+shellquote(latest.sigurl)+" >/dev/null 2>&1 </dev/null &");
 	} catch(e) {
 		result={returnValue:false};
 	}
@@ -140,10 +168,11 @@ async function installupdate() {
 async function pollupdate(tag) {
 	let status="";
 	try {
-		const result=await execasroot("cat "+UPDATE_STATUS_FILE+" 2>/dev/null");
+		if(!updatedir){ return; }
+		const result=await execasroot("cat "+updatedir+"/status 2>/dev/null");
 		status=String(result.stdoutString || "").trim();
 	} catch(e) {}
-	if(!status || status===updatestate.step){ return; }
+	if(!status || status==="starting" || status===updatestate.step){ return; }
 	if(status.indexOf("failed:")===0){
 		clearInterval(updatepoll);
 		try { localStorage.removeItem(UPDATE_FLAG_KEY); } catch(e) {}
@@ -164,10 +193,11 @@ function updatewelcome() {
 	if(tag && tag==="v"+APP_RELEASE){ toasty("OpenLauncher updated to "+tag); }
 }
 
-function renderupdate(box) {
+// what the update is doing, in words (App info shows it)
+function updatetext() {
 	const tag=updatestate.tag || "";
 	const text={
-		idle:"Downloads the newest release from GitHub, checks it, installs it and reopens the launcher. Your settings are kept.",
+		idle:"Downloads the newest release from GitHub, checks that it is signed by OpenLauncher's key, installs it and reopens the launcher. Your settings are kept.",
 		checking:"Checking GitHub...",
 		uptodate:"You already have the newest release ("+tag+").",
 		downloading:"Downloading "+tag+"..."+(updatestate.mb?" ("+updatestate.mb+" MB)":""),
@@ -176,7 +206,7 @@ function renderupdate(box) {
 		installed:"Installed "+tag+". Reopening the launcher...",
 		failed:updatefailtext()
 	}[updatestate.step];
-	box.appendChild(el("div","sstatus",text));
+	return text || "";
 }
 
 updatewelcome();

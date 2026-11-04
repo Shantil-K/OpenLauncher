@@ -160,7 +160,7 @@ z-index:9999;
 	gap: 1vw;
 }
 #realappbarbtu:checked ~ #drawertools { display: flex; }
-#editbtn, #settingsbtn {
+#editbtn, #settingsbtn, #runningbtn {
 	font-family: inherit;
 	font-size: 2vh;
 	padding: 0.6vh 1.6vw;
@@ -171,7 +171,7 @@ z-index:9999;
 }
 #settingsbtn { padding: 0.6vh 0.9vw; display: flex; align-items: center; }
 #settingsbtn img { height: 3.4vh; width: 3.4vh; display: block; }
-#editbtn:hover, #settingsbtn:hover { background-color: rgba(var(--accent), 0.5); }
+#editbtn:hover, #settingsbtn:hover, #runningbtn:hover { background-color: rgba(var(--accent), 0.5); }
 
 /* edit mode: hovering a tile covers it with its controls */
 .appctl {
@@ -414,6 +414,12 @@ z-index:9999;
 .picturepick { width: 12vh; height: 6.75vh; padding: 0; border-radius: 0.8vh; overflow: hidden; border: 3px solid rgba(255,255,255,0.35); }
 .picturepick.on { border-color: rgb(var(--accent)); box-shadow: 0 0 0 2px rgba(0,0,0,0.6), 0 0 0 4px rgb(var(--accent)); }
 .picturepick img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.picturepick { position: relative; }
+.picturetick { position: absolute; top: 0.4vh; right: 0.4vh; width: 2.4vh; height: 2.4vh; border-radius: 50%; color: rgb(0,0,0); background-color: rgb(var(--accent)); }
+.picturetick svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+.wallgroup { margin: 1.6vh 0 0.8vh; font-size: 1.7vh; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+.wallsummary { font-size: 2vh; opacity: 0.9; }
+.scontrol > .wallgroup, .scontrol > .wallsummary, .scontrol > .picturepicker, .scontrol > .scontrol, .scontrol > .listrow { flex: 1 1 100%; }
 #settingsclose:hover, .sopt:hover, .stab:hover, .poscell:hover, .swatch:hover, .picturepick:hover { background-color: rgba(var(--accent), 0.45); }
 .stab.on:hover, .sopt.on:hover, .poscell.on:hover { background-color: rgb(var(--accent)); }
 .sheading { margin-top: 2.4vh; padding-bottom: 0.6vh; font-size: 1.8vh; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(var(--accent)); border-bottom: 1px solid rgba(var(--accent), 0.5); }
@@ -501,15 +507,16 @@ z-index:9999;
 .sourcecount { font-size: 1.8vh; opacity: 0.7; font-variant-numeric: tabular-nums; }
 /* Settings > App info */
 .srow.nolabel .slabel { display: none; }
-.scontrol > .abouthead, .scontrol > .aboutcols { flex: 1 1 100%; }
+.scontrol > .abouthead, .scontrol > .aboutupdate, .scontrol > .aboutrows { flex: 1 1 100%; }
 .abouthead { display: flex; align-items: center; gap: 1.4vw; margin-bottom: 2vh; }
 .abouticon { flex: 0 0 auto; width: 10vh; height: 10vh; border-radius: 2vh; }
 .abouttitle { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .aboutname { font-size: 3.4vh; }
 .aboutsub { margin-top: 0.4vh; font-size: 1.8vh; opacity: 0.7; }
 .aboutactions { display: flex; flex-wrap: wrap; gap: 0.8vh 0.6vw; justify-content: flex-end; }
-.aboutcols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 3vw; }
-.aboutsection .sheading { margin-top: 1.6vh; }
+.aboutupdate { display: flex; align-items: center; gap: 1.2vw; margin-bottom: 1.6vh; padding: 1.2vh 1vw; border-radius: 1vh; background-color: rgba(255,255,255,0.06); }
+.aboutupdatetext { flex: 1; min-width: 0; font-size: 1.9vh; }
+.aboutrows { max-width: 60vw; }
 .aboutrow { display: flex; align-items: baseline; justify-content: space-between; gap: 1vw; padding: 0.55vh 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 1.8vh; }
 .aboutlabel { flex: 0 0 auto; opacity: 0.7; }
 .aboutvalue { min-width: 0; text-align: right; overflow-wrap: anywhere; }
@@ -723,7 +730,7 @@ z-index:9999;
 #folderclose svg { display: block; width: 100%; height: 100%; fill: currentColor; }
 #folderclose:hover { background-color: rgba(var(--accent), 0.45); }
 /* the Rename window: same look as the folder window */
-#renamebackdrop { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 20000; background-color: rgba(0,0,0,0.55); }
+#renamebackdrop { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 20001; background-color: rgba(0,0,0,0.55); }
 #renamebox {
 	display: none;
 	position: fixed;
@@ -732,7 +739,7 @@ z-index:9999;
 	width: 40vw;
 	box-sizing: border-box;
 	padding: 2vh 1.6vw;
-	z-index: 20001;
+	z-index: 20002;           /* above Settings, which opens it (Apps > Names and icons) */
 	color: rgb(255,255,255);
 	background-color: rgba(18,18,24,0.97);
 	border: 2px solid rgba(var(--accent), 0.85);
@@ -750,6 +757,8 @@ z-index:9999;
 #renameinput { width: 100%; box-sizing: border-box; }
 #renameactions { display: flex; gap: 0.8vw; margin-top: 1.6vh; }
 #renamemessage { margin-top: 1vh; min-height: 2vh; }
+#renameiconrow { display: flex; align-items: center; flex-wrap: wrap; gap: 0.8vh 0.8vw; margin-top: 2vh; padding-top: 1.6vh; border-top: 1px solid rgba(255,255,255,0.15); }
+#renameiconlabel { font-size: 1.7vh; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; margin-right: 0.4vw; }
 /* one card per place the app can go */
 #folderlist { display: grid; grid-template-columns: 1fr 1fr; gap: 1vh 0.8vw; }
 .foldercard { display: flex; align-items: center; gap: 0.8vw; min-width: 0; padding: 1vh 1vw; text-align: left; font-size: 2.1vh; overflow-wrap: anywhere; }
@@ -796,3 +805,56 @@ z-index:9999;
 #appmenulist { display: flex; flex-direction: column; gap: 0.8vh; }
 #appmenulist .sopt { text-align: left; }
 #appmenulist .sopt.danger { margin-top: 1.2vh; }
+/* Running apps (running.js), in the same window */
+.runningapp { display: flex; align-items: center; gap: 0.8vw; }
+.runningicon { flex: 0 0 auto; width: 4.4vh; height: 4.4vh; object-fit: cover; border-radius: 0.7vh; }
+.runningname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.runningclose { flex: 0 0 auto; width: 2.4vh; height: 2.4vh; opacity: 0.6; }
+.runningclose svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+#appmenulist .sstatus { margin-bottom: 0.4vh; }
+
+/* the file browser (files.js): pictures, videos and folders on a USB stick or in the TV's storage */
+#filesbackdrop { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 20002; background-color: rgba(0,0,0,0.55); }
+#filesbox {
+	display: none;
+	position: fixed;
+	top: 8vh;
+	left: 20vw;
+	width: 60vw;
+	height: 84vh;
+	box-sizing: border-box;
+	padding: 2vh 1.6vw;
+	z-index: 20003;
+	color: rgb(255,255,255);
+	background-color: rgba(18,18,24,0.97);
+	border: 2px solid rgba(var(--accent), 0.85);
+	border-radius: 1.6vh;
+	flex-direction: column;
+}
+#maindiv.filesopen #filesbackdrop { display: block; }
+#maindiv.filesopen #filesbox { display: flex; }
+#fileshead { display: flex; align-items: center; gap: 1.2vw; margin-bottom: 1.6vh; }
+#filesheadtext { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#filestitle { font-size: 2.8vh; overflow-wrap: anywhere; }
+#filespath { margin-top: 0.3vh; font-size: 1.8vh; opacity: 0.7; overflow-wrap: anywhere; }
+#filesclose { width: 4.4vh; height: 4.4vh; padding: 0.7vh; font-family: inherit; color: rgb(255,255,255); background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); border-radius: 0.8vh; }
+#filesclose svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+#filesclose:hover { background-color: rgba(var(--accent), 0.45); }
+#filesplaces, #filesactions { display: flex; flex-wrap: wrap; gap: 0.8vh 0.6vw; margin-bottom: 1.2vh; }
+#filesactions:empty { display: none; }
+#fileslist { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; display: grid; grid-template-columns: 1fr 1fr 1fr; grid-auto-rows: min-content; gap: 1vh 0.8vw; padding: 0.6vh; }
+.filecard { display: flex; align-items: center; gap: 0.8vw; min-width: 0; padding: 0.8vh 0.8vw; text-align: left; font-size: 1.9vh; }
+.filename { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filepicture { flex: 0 0 auto; display: block; position: relative; width: 6vh; height: 6vh; border-radius: 0.8vh; overflow: hidden; background-color: rgba(255,255,255,0.14); }
+.filepicture > svg { position: absolute; top: 18%; left: 18%; width: 64%; height: 64%; fill: currentColor; }
+.filepicture > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+#filesmessage { margin-top: 1vh; min-height: 2vh; }
+.sstatus.guide { margin-bottom: 1.2vh; line-height: 1.45; }
+/* Settings > Apps > Names and icons: one button per app, which opens its edit window (rename.js) */
+.appeditlist { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8vh 0.6vw; }
+.appeditbtn { display: flex; align-items: center; gap: 0.7vw; min-width: 0; padding: 0.7vh 0.7vw; text-align: left; font-size: 1.8vh; }
+.appediticon { flex: 0 0 auto; width: 4.4vh; height: 4.4vh; object-fit: cover; border-radius: 0.7vh; }
+.appeditname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.appeditmark { flex: 0 0 auto; width: 2.2vh; height: 2.2vh; opacity: 0.7; }
+.appeditmark svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+.appeditbtn.hiddenapp .appediticon { opacity: 0.45; }

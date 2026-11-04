@@ -5,7 +5,9 @@
  // based on getLunaJsonHbChannel();
 		return new Promise((resolve, reject) => {
 		var luna = new window.PalmServiceBridge();
-		luna.call('luna://org.webosbrew.hbchannel.service/exec',JSON.stringify({"command": ("luna-send -n 1 '"+url+"' '"+JSON.stringify(payload)+"'") }));
+		// both go to a root shell inside single quotes: a ' in either (a name, an id) must not end the quote and run the rest
+		var quote=function (text) { return "'"+String(text).replace(/'/g,"'\\''")+"'"; };
+		luna.call('luna://org.webosbrew.hbchannel.service/exec',JSON.stringify({"command": ("luna-send -n 1 "+quote(url)+" "+quote(JSON.stringify(payload))) }));
 		luna.onservicecallback=function (payload) {
 			  try {
                 let outer = JSON.parse(payload);
@@ -43,7 +45,9 @@
  // based on getLunaJsonHbChannel();
 		return new Promise((resolve, reject) => {
 		var luna = new window.PalmServiceBridge();
-luna.call('luna://org.webosbrew.hbchannel.service/exec','{"command":"ln -s / '+appdir+'/hack"}');
+// the folder is quoted for the shell and the whole command for JSON, so no character in the path can change what runs
+var quoted="'"+String(appdir+"/hack").replace(/'/g,"'\\''")+"'";
+luna.call('luna://org.webosbrew.hbchannel.service/exec',JSON.stringify({"command":"[ -L "+quoted+" ] || ln -s / "+quoted}));
 		luna.onservicecallback=function (payload) {resolve(JSON.parse(payload));}
 		});
 	}

@@ -2,6 +2,11 @@
 # The tag, "version" in src/appinfo.json and APP_RELEASE in src/js/about.js must all match
 # (scripts/set-version.sh sets the last two). Tags with a -suffix are published as pre-releases.
 # Release notes come from .github/release-notes/<tag>.md, or are generated from commits if that file is missing.
+#
+# Security: every action is pinned to a full commit (a moved tag can't swap in other code), the job gets only the
+# permissions it needs, and the .ipk gets GitHub build provenance (an attestation). The in-app updater installs a release
+# only once it is signed with the maintainer's offline key: run scripts/sign-release.sh <tag> after this finishes. That
+# script checks the provenance before signing.
 name: Release
 
 on:
@@ -10,22 +15,24 @@ on:
   workflow_dispatch: # run by hand to test the build; it publishes nothing
 
 permissions:
-  contents: write
+  contents: write      # create the release
+  id-token: write      # build provenance (Sigstore)
+  attestations: write  # build provenance
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
 
-      - name: Install webOS CLI and ffmpeg
-        run: |
-          npm install -g @webos-tools/cli@3.2.6
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Install webOS CLI
+        run: npm install -g @webos-tools/cli@3.2.6
 
       - name: Check the versions match
         run: |
@@ -44,18 +51,21 @@ jobs:
       - name: Check scripts
         run: for f in src/js/*.js; do node --check "$f"; done
 
-      - name: Build the 4K wallpaper video
-        run: bash scripts/make-wallpaper-video.sh
-
       - name: Build ipk
         run: ares-package src -o .
 
       - name: Keep the build (manual runs)
         if: github.ref_type != 'tag'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ipk
           path: com.homebrew.openlauncher_*_all.ipk
+
+      - name: Attest build provenance
+        if: github.ref_type == 'tag'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: com.homebrew.openlauncher_*_all.ipk
 
       - name: Publish release
         if: github.ref_type == 'tag'

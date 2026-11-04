@@ -49,7 +49,7 @@ const SETTINGS_SCHEMA=[
 	{id:"weather",title:"Weather",icon:"partday",items:[
 		{key:"weatherShow",label:"Weather",type:"choice",default:false,options:ON_OFF,hint:"Current weather from Open-Meteo (needs the internet)"},
 		{key:"weatherPlace",label:"Location",type:"custom",wide:true,default:null,show:(p) => p.weatherShow,
-			valid:(v) => v===null || (!!v && typeof v.name==="string" && typeof v.lat==="number" && typeof v.lon==="number"),
+			valid:(v) => v===null || (!!v && typeof v.name==="string" && v.name.length<=200 && typeof v.lat==="number" && typeof v.lon==="number" && isFinite(v.lat) && isFinite(v.lon) && Math.abs(v.lat)<=90 && Math.abs(v.lon)<=180),
 			render:(box) => renderweatherplace(box)},
 		{key:"weatherUnit",label:"Temperature",type:"choice",default:"c",options:[["c","\u00b0C"],["f","\u00b0F"]],show:(p) => p.weatherShow},
 		{key:"weatherPos",label:"Position",type:"position",default:"with-clock",withClock:true,show:(p) => p.weatherShow}
@@ -74,24 +74,23 @@ const SETTINGS_SCHEMA=[
 		{type:"heading",label:"Colour"},
 		{key:"accent",label:"Hover colour",type:"swatch",default:"80,220,230",options:[
 			["255,150,255","Pink"],["255,90,90","Red"],["255,160,60","Orange"],["255,215,80","Yellow"],["110,220,120","Green"],
-			["80,220,230","Cyan"],["90,170,255","Blue"],["170,120,255","Purple"],["255,255,255","White"]]}
+			["80,220,230","Cyan"],["90,170,255","Blue"],["170,120,255","Purple"],["255,255,255","White"]]},
+		{type:"heading",label:"Names and icons"},
+		{label:"Names and icons",type:"custom",wide:true,nolabel:true,render:(box) => renderappeditlist(box)}
 	]},
 	{id:"wallpaper",title:"Wallpaper",icon:"wallpaper",items:[
-		{key:"videoSource",label:"Video source",type:"choice",default:"online",cards:true,
-			options:[["online","Online","cloud"],["offline","Built in","drive"],["custom","My own","photo"],["picture","Picture","photo"]],
-			hint:"Online streams about 2.7 GB per hour. Offline plays the video built into the launcher. My own plays the links you add below. Picture is a single fixed photo, picked below - no video at all, so nothing to buffer or decode."},
+		{key:"videoSource",label:"Wallpaper",type:"choice",default:"online",cards:true,
+			options:[["online","Online videos","cloud"],["custom","My wallpapers","photo"]],
+			hint:"Online videos streams aerial footage (about 2.7 GB an hour). My wallpapers shows what you pick: built-in photos, your own pictures and videos, or links. Pick one and it stays; pick several and they take turns."},
 		{label:"Video sources",type:"custom",wide:true,show:(p) => p.videoSource==="online",
 			hint:"Where the streamed videos come from and how many there are of each. The list is from couchy-launcher; the videos stay on their own servers.",
 			render:(box) => rendersources(box)},
 		{key:"customUrls",label:"My wallpapers",type:"custom",wide:true,default:[],show:(p) => p.videoSource==="custom",
-			hint:"Links to videos (.mp4 .mov .mkv .webm) and photos (.jpg .png .webp). They play in random order.",
+			hint:"Press a built-in photo to add or remove it. Your own pictures, videos and whole folders can come from a USB stick or the TV's storage (put them in /media/developer/wallpapers), or from a link.",
 			valid:(v) => Array.isArray(v) && v.length<=CUSTOM_MAX && v.every(validcustomurl),
 			render:(box) => renderwallpaperlist(box)},
-		{key:"customSeconds",label:"Photo time",type:"choice",default:20,options:[[10,"10 s"],[20,"20 s"],[30,"30 s"],[60,"1 min"]],show:(p) => p.videoSource==="custom"},
-		{key:"pictureChoice",label:"Picture",type:"custom",wide:true,default:null,show:(p) => p.videoSource==="picture",
-			hint:"Pick one of the launcher's built-in photos to use as a fixed wallpaper.",
-			valid:(v) => v===null || (typeof wallpapers!=="undefined" && wallpapers.indexOf(v)!==-1),
-			render:(box) => renderpicturepicker(box)}
+		{key:"customSeconds",label:"Change every",type:"choice",default:20,options:[[10,"10 s"],[20,"20 s"],[30,"30 s"],[60,"1 min"],[300,"5 min"]],
+			show:(p) => p.videoSource==="custom" && wallpaperstaketurns(p),hint:"How long each picture stays before the next one. Videos play to their end."}
 	]},
 	{id:"screen",title:"Screen",icon:"monitor",items:[
 		{key:"pixelShift",label:"Pixel shift",type:"choice",default:0,options:[[0,"Off"],[1,"Small"],[2,"Large"]],
@@ -121,15 +120,16 @@ const SETTINGS_SCHEMA=[
 			run:() => restorehome()},
 		{label:"Result",type:"custom",wide:true,nolabel:true,show:(p) => rooted,render:(box) => renderhomereplace(box)},
 		{label:"Replace stock Home",type:"custom",wide:true,nolabel:true,show:(p) => !rooted,
-			render:(box) => box.appendChild(el("div","sstatus","Needs root (Homebrew Channel). See the Readme's Replace section to do it manually over SSH instead."))}
+			render:(box) => box.appendChild(el("div","sstatus","Needs root (Homebrew Channel). See the Readme's Replace section to do it manually over SSH instead."))},
+		{type:"heading",label:"When the TV turns on",show:(p) => rooted},
+		{label:"Open",type:"custom",wide:true,show:(p) => rooted,
+			hint:"Opens OpenLauncher instead of Live TV when you switch the TV on with the power button. It starts working after one full restart of the TV. Casting, HDMI devices and timers still open what they ask for.",
+			render:(box) => renderpoweron(box)},
+		{type:"heading",label:"Opening it without root",show:(p) => !rooted},
+		{label:"Without root",type:"custom",wide:true,nolabel:true,show:(p) => !rooted,render:(box) => rendernorootguide(box)}
 	]},
 	{id:"about",title:"App info",icon:"info",items:[
 		{label:"App info",type:"custom",wide:true,nolabel:true,render:(box) => renderabout(box)},
-		{type:"heading",label:"Update"},
-		{type:"action",label:"Install update",button:"Update",icon:"download",show:(p) => rooted,run:() => installupdate()},
-		{label:"Update status",type:"custom",wide:true,nolabel:true,show:(p) => rooted,render:(box) => renderupdate(box)},
-		{label:"Install update",type:"custom",wide:true,nolabel:true,show:(p) => !rooted,
-			render:(box) => box.appendChild(el("div","sstatus","Updating from here needs root (Homebrew Channel). Without it, install the newest .ipk from GitHub yourself."))},
 		{type:"heading",label:"Uninstall",show:(p) => turstedapp || rooted},
 		{type:"action",label:"Uninstall OpenLauncher",button:"Uninstall",icon:"trash",show:(p) => turstedapp || rooted,
 			confirm:"This uninstalls OpenLauncher (and first restores the stock Home screen, if it was replaced). Continue?",confirmButton:"Yes, uninstall",
@@ -166,10 +166,25 @@ function validpref(item,value){
 	return false;
 }
 
+// Settings saved by older versions, in today's terms. Used for the saved settings and for imported backups.
+//  - the "Built in" video source (a looping video in the app) is gone: those go back to the online videos
+//  - "Picture" (one built-in photo) is now part of My wallpapers: that photo becomes the one wallpaper there
+function migrateprefs(saved){
+	if(!saved || typeof saved!=="object"){ return saved; }
+	if(saved.videoSource==="offline"){ delete saved.videoSource; }
+	if(saved.videoSource==="picture"){
+		const photo=typeof saved.pictureChoice==="string" && typeof wallpapers!=="undefined" && wallpapers.indexOf(saved.pictureChoice)!==-1?saved.pictureChoice:(typeof wallpapers!=="undefined"?wallpapers[0]:null);
+		saved.videoSource="custom";
+		saved.customUrls=photo?["builtin:"+photo]:[];
+	}
+	delete saved.pictureChoice;
+	return saved;
+}
+
 function loadprefs(){
 	prefs=Object.assign({},PREF_DEFAULTS);
 	try {
-		const saved=JSON.parse(localStorage.getItem(PREFS_KEY));
+		const saved=migrateprefs(JSON.parse(localStorage.getItem(PREFS_KEY)));
 		if(saved){
 			SETTINGS_SCHEMA.forEach((section) => section.items.forEach((item) => {
 				if(item.key && (item.key in saved) && validpref(item,saved[item.key])){ prefs[item.key]=saved[item.key]; }
@@ -254,6 +269,17 @@ function applyprefs(){
 }
 
 // ---- panel
+
+// Settings > TV without root: nothing can replace LG's Home then (an app is closed when another opens, can't see which app
+// is in front, and a background service ends after a few seconds), but there are two ways to get to the launcher quickly.
+function rendernorootguide(box){
+	const steps=[
+		"Without root nothing can replace LG's Home screen. Two ways to get here quickly:",
+		"Quick Access (any TV): with OpenLauncher open, hold a number key 1 to 9 on the remote and choose OpenLauncher. From then on that number key opens it from anywhere. The TV starts it fresh each time, so it is slower than with root.",
+		"A second device that stays on (advanced): tools/home-watch in the OpenLauncher repository runs on a Raspberry Pi or home server. It watches the TV over LG's remote-control connection (turn LG Connect Apps on) and opens OpenLauncher whenever LG's Home shows. Press Home twice to stay on LG's Home. Based on webos-vibehack by OmkarK97 (MIT)."
+	];
+	steps.forEach((text) => box.appendChild(el("div","sstatus guide",text)));
+}
 
 function el(tag,cls,text){
 	const e=document.createElement(tag);
@@ -459,7 +485,7 @@ function renderpane(){
 			settingstab=s.id;
 			settingspane.scrollTop=0;
 			sethint("");
-			if(s.id==="tv"){ detecthomemethod(); }
+			if(s.id==="tv"){ detecthomemethod(); loadpoweron(); }
 			renderpane();
 		});
 		settingstabs.appendChild(tab);
@@ -516,6 +542,7 @@ function settingsisopen(){
 }
 
 function opensettings(){
+	if(settingstab==="tv"){ loadpoweron(); }
 	renderpane();
 	maindiv.classList.add("settingsopen");
 }

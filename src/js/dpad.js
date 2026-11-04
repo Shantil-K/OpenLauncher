@@ -14,6 +14,7 @@ const KEY_ENTER=13;
 const KEY_BACK=461;
 // the coloured buttons are shortcuts: the gear and Edit buttons are far from the app grid
 const KEY_RED=403;      // info card
+const KEY_GREEN=404;    // running apps
 const KEY_YELLOW=405;   // settings
 const KEY_BLUE=406;     // Edit mode
 const SEEK_FRACTION=0.02;    // a slider moves 2% of its range per Left/Right press, unless it has its own data-dpadstep
@@ -75,6 +76,7 @@ function appmenuopen() {
 }
 
 function contextname() {
+	if(filesopen()){ return "files"; }
 	if(renameopen()){ return "rename"; }
 	if(folderpickeropen()){ return "picker"; }
 	if(appmenuopen()){ return "menu"; }
@@ -84,20 +86,21 @@ function contextname() {
 }
 
 function contextelements() {
+	if(filesopen()){ return within(filesbox,"button"); }
 	if(renameopen()){ return within(renamebox,"button, input"); }
 	if(folderpickeropen()){ return within(folderpicker,"button, input"); }
 	if(appmenuopen()){ return within(appmenu,"button"); }
 	if(settingsisopen()){ return within(settingspanel,"button, input, textarea"); }
 	if(infoisopen()){ return within(infocard,"button, input"); }
 	if(realappbarbtu.checked){
-		return within(folderbar,"button").concat(within(appluncher,".appitem"),[settingsbtn,editbtn].filter(isvisible),within(appbar,".appitem"));
+		return within(folderbar,"button").concat(within(appluncher,".appitem"),[settingsbtn,runningbtn,editbtn].filter(isvisible),within(appbar,".appitem"));
 	}
 	return within(appbar,".appitem").concat(within(recentrow,".appitem"),[infobtn].filter(isvisible));
 }
 
 // ---- focus
 function reveal(el) {
-	[appluncher,settingspane,folderpicker].forEach((scroller) => {
+	[appluncher,settingspane,folderpicker,fileslist].forEach((scroller) => {
 		if(!scroller.contains(el)){ return; }
 		const box=scroller.getBoundingClientRect();
 		const rect=el.getBoundingClientRect();
@@ -132,6 +135,10 @@ function defaultfocus(list) {
 	if(settingsisopen()){
 		const tab=list.filter((el) => el.classList.contains("stab") && el.classList.contains("on"))[0];
 		if(tab){ return tab; }
+	}
+	if(filesopen()){
+		// start on the first folder or file, not on the places above it
+		return list.filter((el) => fileslist.contains(el))[0] || list[0] || null;
 	}
 	if(renameopen()){ return renameinput; }       // ready to type; OK opens the keyboard
 	if(folderpickeropen()){
@@ -196,7 +203,6 @@ function openappmenu(tile) {
 	} else {
 		add(ishidden(id)?"Show":"Hide",() => togglehide(id));
 		add("Move to folder...",() => openfolderpicker(id));
-		add("Rename...",() => openrename(id));
 	}
 	add("Reorder",() => {
 		startcarry(id,inbar);
@@ -262,6 +268,8 @@ function movecarriedbykey(key) {
 function handleback() {
 	if(istyping()){
 		document.activeElement.blur();
+	} else if(filesopen()){
+		filesback();
 	} else if(carrying){
 		stopcarry();
 	} else if(appmenuopen()){
@@ -286,7 +294,7 @@ function handleback() {
 
 function activate(el) {
 	// only a press on the screen underneath sets where to come back to; buttons inside a menu or panel are about to vanish
-	if(!appmenuopen() && !folderpickeropen() && !renameopen() && !settingsisopen() && !infoisopen()){ returnto=el; }
+	if(!appmenuopen() && !folderpickeropen() && !renameopen() && !settingsisopen() && !infoisopen() && !filesopen()){ returnto=el; }
 	// folder tiles replace the whole list, so there is no "same place" to come back to
 	lastactivation=el.classList.contains("foldertile")?null:{context:contextname(),index:contextelements().indexOf(el)};
 	if(istextbox(el)){
@@ -306,6 +314,9 @@ function shortcut(code) {
 		if(settingsisopen()){ closesettings(); } else { settingsbtn.click(); }
 	} else if(code===KEY_RED){
 		if(infoisopen()){ closeinfo(); } else if(!realappbarbtu.checked && !settingsisopen()){ infobtn.click(); }
+	} else if(code===KEY_GREEN){
+		if(appmenuopen() && appmenutitle.textContent.indexOf("Running apps")===0){ closeappmenu(); }
+		else if(!appmenuopen() && !settingsisopen() && !renameopen() && !folderpickeropen() && !filesopen()){ openrunning(); }
 	} else if(code===KEY_BLUE){
 		if(realappbarbtu.checked && !settingsisopen()){ editbtn.click(); }
 	}
@@ -318,7 +329,7 @@ function onkey(event) {
 		handleback();
 		return;
 	}
-	if(code===KEY_RED || code===KEY_YELLOW || code===KEY_BLUE){
+	if(code===KEY_RED || code===KEY_GREEN || code===KEY_YELLOW || code===KEY_BLUE){
 		if(!istyping()){
 			event.preventDefault();
 			keyboardmode=true;

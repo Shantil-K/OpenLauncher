@@ -53,7 +53,8 @@ const RESTORE_STEPS="rm -f /var/lib/webosbrew/init.d/replace.sh; "+
 	"umount /usr/lib/qml/KeyFilters/systemUi.js 2>/dev/null; "+
 	"umount /usr/palm/applications/com.webos.app.home/lib/libapp.so 2>/dev/null; "+
 	"pgrep -la flutter-client | grep 'com.webos.app.home' | awk '{print $1}' | while read A ; do kill -9 $A ; done; "+
-	"luna-send -n 1 -f 'luna://com.webos.service.applicationmanager/setDefaultApp' '{\"category\": \"home\",\"appId\":\"com.webos.app.home\"}'";
+	"luna-send -n 1 -f 'luna://com.webos.service.applicationmanager/setDefaultApp' '{\"category\": \"home\",\"appId\":\"com.webos.app.home\"}'; "+
+	"rm -f /var/lib/webosbrew/openlauncher/hackfilters.js /var/lib/webosbrew/openlauncher/libapp.so";
 const RESTORE_COMMAND=RESTORE_STEPS+"; restart sam";
 
 let replacestate={busy:false,action:null,ok:null};   // action: "apply" | "restore"; ok: null before it has run, then true or false
@@ -116,7 +117,7 @@ async function selfuninstall() {
 	uninstallstate={busy:true,ok:null};
 	if(settingstab==="about"){ renderpane(); }
 	if(rooted){
-		const command=RESTORE_STEPS+"; "+
+		const command=RESTORE_STEPS+"; "+POWERON_REMOVE_COMMAND+"; rm -rf /var/lib/webosbrew/openlauncher; "+
 			"luna-send -n 1 -f 'luna://com.webos.appInstallService/remove' '{\"id\":\""+appid+"\",\"subscribe\":false}'; "+
 			"restart sam";
 		try {
@@ -145,7 +146,7 @@ async function selfuninstall() {
 }
 
 function renderuninstall(box){
-	let text=rooted?"Restores the stock Home screen first (if it was replaced), then uninstalls OpenLauncher."
+	let text=rooted?"Restores the stock Home screen first (if it was replaced) and the app the TV starts with, then uninstalls OpenLauncher."
 		:"Uninstalls OpenLauncher. Needs trusted trustLevel or root; without root the Replace Home fix is skipped since it was never usable without root either.";
 	if(uninstallstate.busy){ text="Working... the app may close on its own once this finishes."; }
 	else if(uninstallstate.ok===false){ text="Couldn't uninstall it from here. Remove it from the TV's own app/content manager, or Homebrew Channel's App Manager, instead."; }

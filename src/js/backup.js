@@ -43,6 +43,7 @@ function parsebackup(text){
 	if(!(data.version<=BACKUP_VERSION)){
 		return {error:"This backup is from a newer version of the launcher."};
 	}
+	if(data.prefs){ data.prefs=migrateprefs(data.prefs); }
 	const restored={};
 	let count=0;
 	SETTINGS_SCHEMA.forEach((section) => section.items.forEach((item) => {
@@ -70,6 +71,7 @@ function parsebackup(text){
 			folders:folders,
 			appfolder:appfolder,
 			names:cleannames(saved.names),
+			icons:cleanicons(saved.icons),
 			sysplaced:cleanstrings(saved.sysplaced) || [],
 			sysdismissed:cleanstrings(saved.sysdismissed) || []
 		}
@@ -85,6 +87,7 @@ function applybackup(parsed){
 	settings.folders=parsed.layout.folders;
 	settings.appfolder=parsed.layout.appfolder;
 	settings.names=parsed.layout.names;
+	settings.icons=parsed.layout.icons;
 	settings.sysplaced=parsed.layout.sysplaced;
 	settings.sysdismissed=parsed.layout.sysdismissed;
 	savesettings();
@@ -97,8 +100,28 @@ function shellquote(text){
 	return "'"+String(text).replace(/'/g,"'\\''")+"'";
 }
 
+// The text goes to the shell as one argument, and Linux allows at most 128 KB per argument. Custom icons can make a backup
+// bigger than that, so it is written in pieces: the first one replaces the file, the rest are added to it.
+const BACKUP_PIECE=60000;
+
 async function savebackupfile(text){
-	const result=await execasroot("printf '%s' "+shellquote(text)+" > "+BACKUP_FILE);
+	const pieces=[];
+	for(let at=0;at<text.length;at+=BACKUP_PIECE){ pieces.push(text.slice(at,at+BACKUP_PIECE)); }
+	if(pieces.length===0){ pieces.push(""); }
+	// /media/developer is writable by every app on the TV, so the file being written gets a new random name (mktemp), never
+	// a fixed one something else could have put there first
+	const made=await execasroot("mktemp /media/developer/.openlauncher-backup.XXXXXX");
+	const temp=String((made && made.stdoutString) || "").trim();
+	if(!/^\/media\/developer\/\.openlauncher-backup\.[A-Za-z0-9]+$/.test(temp)){ return false; }
+	for(let i=0;i<pieces.length;i++){
+		const result=await execasroot("printf '%s' "+shellquote(pieces[i])+(i===0?" > ":" >> ")+temp);
+		if(!result || result.returnValue===false || result.errorText || result.exitCode){
+			execasroot("rm -f "+temp);
+			return false;
+		}
+	}
+	// only a complete file replaces the old backup
+	const result=await execasroot("mv -f "+temp+" "+BACKUP_FILE);
 	return !!result && result.returnValue!==false && !result.errorText && !result.exitCode;
 }
 
@@ -110,7 +133,6 @@ async function readbackupfile(){
 
 async function exportbackup(){
 	backuptext=makebackup();
-	try { localStorage.setItem(LAST_BACKUP_KEY,String(Date.now())); } catch(e) {}
 	backupmessage="Backup created. Copy the text below and keep it somewhere safe.";
 	if(rooted){
 		let saved=false;

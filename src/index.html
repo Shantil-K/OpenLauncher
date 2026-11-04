@@ -5,6 +5,10 @@
 
 <head>
 	<meta charset="utf-8">
+	<!-- The launcher can run commands as root (Homebrew Channel), so no script may ever run except its own files: not one
+	     smuggled in through an app name, a file name, a backup or a web answer. Pictures and videos may come from the TV,
+	     USB sticks and the web (wallpapers); data only from the services listed. -->
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: file: https: http:; media-src 'self' file: https: http:; connect-src https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.github.com; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
 	<title>OpenLauncher</title>
 </head>
 
@@ -55,6 +59,7 @@
 	<div id="folderbar"></div>
 	<div id="drawertools">
 		<button id="settingsbtn" title="Settings" aria-label="Settings"><img src="access/gear.svg" alt=""></button>
+		<button id="runningbtn" title="Running apps (green button)">Running apps</button>
 		<button id="editbtn">Edit</button>
 	</div>
 	<!-- info about the wallpaper video: the button shows on the home screen, the card opens from it -->
@@ -99,7 +104,19 @@
 		</div>
 		<input type="text" id="renameinput" class="stext" maxlength="40" placeholder="Name">
 		<div id="renameactions"><button id="renamesave" class="sopt">Save</button><button id="renamereset" class="sopt">Use the original name</button></div>
+		<div id="renameiconrow"><span id="renameiconlabel">Icon</span><button id="renameiconpick" class="sopt">Choose a picture...</button><button id="renameiconreset" class="sopt">Use the original icon</button></div>
 		<div id="renamemessage" class="sstatus"></div>
+	</div>
+	<div id="filesbackdrop"></div>
+	<div id="filesbox">
+		<div id="fileshead">
+			<div id="filesheadtext"><span id="filestitle">Choose a file</span><small id="filespath"></small></div>
+			<button id="filesclose" title="Close" aria-label="Close"></button>
+		</div>
+		<div id="filesplaces"></div>
+		<div id="filesactions"></div>
+		<div id="fileslist"></div>
+		<div id="filesmessage" class="sstatus"></div>
 	</div>
 	<div id="settingsbackdrop"></div>
 	<div id="settingspanel">
@@ -144,6 +161,9 @@
 <script src="js/dpad.js"></script>
 <script src="js/weather.js"></script>
 <script src="js/background.js"></script>
+<script src="js/files.js"></script>
+<script src="js/running.js"></script>
+<script src="js/poweron.js"></script>
 <script src="js/info.js"></script>
 <script src="js/screen.js"></script>
 <script src="js/main.js"></script>

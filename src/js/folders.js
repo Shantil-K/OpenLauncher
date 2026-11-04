@@ -125,7 +125,7 @@ function drawfolderpreview(tile,apps) {
 	apps.slice(0,FOLDER_PREVIEW_ICONS).forEach((app) => {
 		const img=document.createElement("img");
 		img.src=appiconsrc(app);
-		if(app.iconColor!==undefined){ img.style.backgroundColor=app.iconColor; }
+		if(validcolor(app.iconColor)){ img.style.backgroundColor=app.iconColor; }
 		img.addEventListener("error",() => { img.src=appdir+"/access/fallback.png"; });
 		grid.appendChild(img);
 	});
@@ -284,7 +284,7 @@ function cardpicture(apps,icon) {
 	apps.slice(0,FOLDER_PREVIEW_ICONS).forEach((app) => {
 		const img=document.createElement("img");
 		img.src=appiconsrc(app);
-		if(app.iconColor!==undefined){ img.style.backgroundColor=app.iconColor; }
+		if(validcolor(app.iconColor)){ img.style.backgroundColor=app.iconColor; }
 		grid.appendChild(img);
 	});
 	box.appendChild(grid);

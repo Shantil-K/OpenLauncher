@@ -6,7 +6,7 @@ const SETTINGS_KEY='openlauncher.settings';
 // used until the user pins/unpins something for the first time
 const DEFAULT_PINNED=["com.webos.app.livetv","com.webos.app.hdmi1","com.webos.app.hdmi2","com.webos.app.hdmi3","com.webos.app.hdmi4","com.webos.app.mediadiscovery","com.famobi.ctr","com.halfbrick.fruitninja","com.github.k4zmu2a.space-cadet-pinball"];
 // sysplaced / sysdismissed: see systemapps.js
-let settings={pinned:null,hidden:[],order:[],folders:[],appfolder:{},sysplaced:[],sysdismissed:[],names:{}};    // names: app id -> the name you gave it
+let settings={pinned:null,hidden:[],order:[],folders:[],appfolder:{},sysplaced:[],sysdismissed:[],names:{},icons:{}};    // names: app id -> the name you gave it; icons: app id -> the picture you gave it (a data: URL, see rename.js)
 // hover-only reordering: rest on a tile's Move zone to pick the app up, hover other tiles to move it, rest on it to drop
 const PICKUP_MS=875;
 const DROP_MS=700;
@@ -54,6 +54,7 @@ function watchmarquee(tile){
 
 // where an app's icon comes from (also used by the miniature icons on folder tiles)
 function appiconsrc(eachapp){
+	if(settings.icons && settings.icons[eachapp.id]){ return settings.icons[eachapp.id]; }    // one you picked (rename.js)
 	const icon=eachapp.icon||"";
 	if(/^[a-z]+:/i.test(icon)){ return icon; }   // already a URL
 	// some webOS versions give the icon as a full path, others relative to the app's folder
@@ -73,10 +74,12 @@ function maketile (eachapp,inbar,recent) {
 		  const appitem = document.createElement("div");
 		  const appname = document.createElement("p");
 		  const appicon = document.createElement("img");
-		appicon.src=appiconsrc(eachapp);
+		appitem.iconsrc=appiconsrc(eachapp);     // as given, to compare with later (img.src turns it into a full URL)
+		appicon.src=appitem.iconsrc;
+		appitem.iconimg=appicon;
 		appicon.setAttribute("class","appicon");
-	if(!(eachapp.iconColor === undefined)) {
-		appicon.style="background-color : " + eachapp.iconColor +";";
+	if(validcolor(eachapp.iconColor)) {
+		appicon.style.backgroundColor=eachapp.iconColor;
 	}
 		appicon.addEventListener("error", function(e){
 			e.target.src=appdir+"/access/fallback.png";
@@ -88,34 +91,6 @@ function maketile (eachapp,inbar,recent) {
 		appitem.setAttribute("data-appid",eachapp.id);
 		appitem.appendChild(appicon);
 		appitem.appendChild(appname);
-		// shown over the tile while hovering it in edit mode; labels and icons are filled in by updatetile()
-		const appctl=document.createElement("div");
-		appctl.setAttribute("class","appctl");
-		if(!inbar){
-			appitem.hidebtn=ctlbutton(() => togglehide(eachapp.id));
-			appctl.appendChild(appitem.hidebtn);
-			const folderbtn=ctlbutton(() => openfolderpicker(eachapp.id));
-			setctl(folderbtn,"Move to folder","folder");
-			appctl.appendChild(folderbtn);
-			const renamebtn=ctlbutton(() => openrename(eachapp.id));
-			setctl(renamebtn,"Rename","pencil");
-			appctl.appendChild(renamebtn);
-			if(canuninstall(eachapp)){
-				const trashbtn=ctlbutton(() => openuninstallquestion(appitem));
-				trashbtn.classList.add("dangerctl");
-				setctl(trashbtn,"Uninstall","trash");
-				appctl.appendChild(trashbtn);
-			} else {
-				renamebtn.classList.add("wide");
-			}
-		}
-		if(inbar && !recent){
-			// only the bottom bar has this: the app menu pins by carrying an app onto the bar (see pincarried)
-			const unpinbtn=ctlbutton(() => unpinapp(eachapp.id));
-			unpinbtn.classList.add("wide");
-			setctl(unpinbtn,"Unpin","unpin");
-			appctl.appendChild(unpinbtn);
-		}
 		if(recent){
 			watchmarquee(appitem);
 			appitem.addEventListener("click", function(){
@@ -125,22 +100,9 @@ function maketile (eachapp,inbar,recent) {
 			});
 			return appitem;
 		}
-		const movezone=document.createElement("div");
-		movezone.setAttribute("class","movezone");
-		movezone.setAttribute("title","Hover to reorder");
-		movezone.setAttribute("aria-label","Hover to reorder");
-		const moveicon=document.createElement("span");
-		moveicon.innerHTML=iconsvg("reorder");
-		movezone.appendChild(moveicon);
-		let pickuptimer=null;
-		movezone.addEventListener("mouseenter", function(){
-			pickuptimer=setTimeout(() => startcarry(eachapp.id,inbar),PICKUP_MS);
-		});
-		movezone.addEventListener("mouseleave", function(){
-			clearTimeout(pickuptimer);
-		});
-		appctl.appendChild(movezone);
-		appitem.appendChild(appctl);
+		// the Edit-mode controls are made the first time Edit mode shows this tile (see addcontrols): most tiles never need them,
+		// and making them for every app made the first start noticeably slower
+		appitem.makecontrols=() => addcontrols(appitem,eachapp,inbar);
 
 		watchmarquee(appitem);
 		appitem.addEventListener("mouseenter", function(){
@@ -167,6 +129,52 @@ function maketile (eachapp,inbar,recent) {
 		});
 		return appitem;
 	}
+
+// the buttons that cover a tile while hovering it in Edit mode (hide, folder, uninstall, unpin, the Move zone)
+function addcontrols(tile,eachapp,inbar){
+	if(tile.appctl){ return; }
+	// labels and icons are filled in by updatetile()
+	const appctl=document.createElement("div");
+	appctl.setAttribute("class","appctl");
+	if(!inbar){
+		tile.hidebtn=ctlbutton(() => togglehide(eachapp.id));
+		appctl.appendChild(tile.hidebtn);
+		const folderbtn=ctlbutton(() => openfolderpicker(eachapp.id));
+		setctl(folderbtn,"Move to folder","folder");
+		appctl.appendChild(folderbtn);
+		// names and icons are changed in Settings > Apps > Names and icons
+		if(canuninstall(eachapp)){
+			const trashbtn=ctlbutton(() => openuninstallquestion(tile));
+			trashbtn.classList.add("dangerctl","wide");
+			setctl(trashbtn,"Uninstall","trash");
+			appctl.appendChild(trashbtn);
+		}
+	}
+	if(inbar){
+		// only the bottom bar has this: the app menu pins by carrying an app onto the bar (see pincarried)
+		const unpinbtn=ctlbutton(() => unpinapp(eachapp.id));
+		unpinbtn.classList.add("wide");
+		setctl(unpinbtn,"Unpin","unpin");
+		appctl.appendChild(unpinbtn);
+	}
+	const movezone=document.createElement("div");
+	movezone.setAttribute("class","movezone");
+	movezone.setAttribute("title","Hover to reorder");
+	movezone.setAttribute("aria-label","Hover to reorder");
+	const moveicon=document.createElement("span");
+	moveicon.innerHTML=iconsvg("reorder");
+	movezone.appendChild(moveicon);
+	let pickuptimer=null;
+	movezone.addEventListener("mouseenter", function(){
+		pickuptimer=setTimeout(() => startcarry(eachapp.id,inbar),PICKUP_MS);
+	});
+	movezone.addEventListener("mouseleave", function(){
+		clearTimeout(pickuptimer);
+	});
+	appctl.appendChild(movezone);
+	tile.appendChild(appctl);
+	tile.appctl=appctl;
+}
 
 function launchapp(id){
 	if(rooted){
@@ -196,9 +204,17 @@ function updatetile(tile,id,inbar,app){
 		const shown=appdisplayname(app);
 		if(tile.namelabel.innerText!==shown){ tile.namelabel.innerText=shown; }
 	}
+	if(app && tile.iconimg){
+		const icon=appiconsrc(app);
+		if(tile.iconsrc!==icon){
+			tile.iconsrc=icon;
+			tile.iconimg.src=icon;
+		}
+	}
 	tile.classList.toggle("hiddenapp",ishidden(id));
 	tile.classList.toggle("pinnedapp",!inbar && ispinned(id));
 	tile.classList.toggle("carried",!!carrying && carrying.id===id && carrying.inbar===inbar);
+	if(editing && tile.makecontrols){ tile.makecontrols(); }
 	if(tile.hidebtn){ setctl(tile.hidebtn,ishidden(id)?"Show":"Hide",ishidden(id)?"eye":"eyeoff"); }
 }
 
@@ -247,6 +263,35 @@ function setappname(id,name){
 	const next=Object.assign({},settings.names);
 	if(clean==="" || (app && clean===app.title)){ delete next[id]; } else { next[id]=clean; }
 	settings.names=next;
+	savesettings();
+	render();
+}
+
+// an app's iconColor comes from its own appinfo.json: only a plain colour is used, never other CSS
+function validcolor(value){
+	return typeof value==="string" && /^(#[0-9a-f]{3,8}|[a-z]{3,20}|rgba?\([0-9.,%\s]{5,40}\))$/i.test(value);
+}
+
+// ---- the icon an app is shown with: one you picked (Edit mode, Name and icon), or the TV's
+const ICON_MAX_CHARS=200000;     // a saved icon is a small picture (see ICON_SIZE in rename.js); anything bigger is not one of ours
+
+function validicon(value){
+	return typeof value==="string" && value.length<=ICON_MAX_CHARS && /^data:image\/(png|webp|jpeg);base64,[A-Za-z0-9+\/=]+$/.test(value);
+}
+
+function cleanicons(icons){
+	const clean={};
+	if(icons && typeof icons==="object"){
+		Object.keys(icons).forEach((id) => { if(validicon(icons[id])){ clean[id]=icons[id]; } });
+	}
+	return clean;
+}
+
+// null (or "") goes back to the TV's own icon
+function setappicon(id,icon){
+	const next=Object.assign({},settings.icons);
+	if(icon && validicon(icon)){ next[id]=icon; } else { delete next[id]; }
+	settings.icons=next;
 	savesettings();
 	render();
 }
@@ -354,6 +399,7 @@ function loadsettings(){
 					if(name!==""){ settings.names[id]=name; }
 				});
 			}
+			settings.icons=cleanicons(saved.icons);
 			settings.sysplaced=Array.isArray(saved.sysplaced)?saved.sysplaced.filter((id) => typeof id==="string"):[];
 			settings.sysdismissed=Array.isArray(saved.sysdismissed)?saved.sysdismissed.filter((id) => typeof id==="string"):[];
 			settings.folders=Array.isArray(saved.folders)?saved.folders.filter((f) => f && typeof f.id==="string" && typeof f.name==="string"):[];
@@ -415,6 +461,46 @@ function drawerchanged(){
 	if(!realappbarbtu.checked && editing){ toggleedit(); }
 }
 
+// ---- starting fast: the app list (and whether we're rooted or trusted) from the last run is saved, so the next start draws
+// the bar and the menu from it at once. The TV is then asked again, and anything that changed is drawn when the answers come.
+// Only the fields the launcher reads are kept: the full list is about 200 KB, this is a fraction of it.
+const APPCACHE_KEY='openlauncher.appcache';
+const APPCACHE_VERSION=1;
+const APP_FIELDS=["id","title","icon","folderPath","iconColor","visible","removable","trustLevel","version","installTime"];
+
+function trimapps(list){
+	return (Array.isArray(list)?list:[]).filter((app) => app && typeof app.id==="string").map((app) => {
+		const trimmed={};
+		APP_FIELDS.forEach((field) => { if(app[field]!==undefined){ trimmed[field]=app[field]; } });
+		return trimmed;
+	});
+}
+
+function readappcache(){
+	try {
+		const saved=JSON.parse(localStorage.getItem(APPCACHE_KEY));
+		if(saved && saved.v===APPCACHE_VERSION && Array.isArray(saved.apps) && saved.apps.length>0){ return saved; }
+	} catch(e) {}
+	return null;
+}
+
+function saveappcache(){
+	try {
+		localStorage.setItem(APPCACHE_KEY,JSON.stringify({v:APPCACHE_VERSION,rooted:rooted,trusted:turstedapp,noappperm:noappperm,appdir:appdir,apps:applist}));
+	} catch(e) {}
+}
+
+// what the last run found: used until the TV has answered
+function usecache(cache){
+	rooted=cache.rooted===true;
+	turstedapp=cache.trusted===true;
+	noappperm=cache.noappperm!==false;
+	if(typeof cache.appdir==="string" && cache.appdir!==""){ appdir=cache.appdir; }
+	applist=cache.apps;
+}
+
+// Asks the TV for the app list and our permissions. Returns the trimmed app list, or null when the launcher can't work
+// here (it closes itself then).
 async function initpermcheck(){
 
 var permtest=await lunacall('luna://com.webos.applicationManager/listApps',{});
@@ -422,28 +508,27 @@ var permtest=await lunacall('luna://com.webos.applicationManager/listApps',{});
 
 var rootcheck=await lunacall('luna://org.webosbrew.hbchannel.service/getConfiguration',{});
 	if (rootcheck.errorText===undefined){
-	       rooted=rootcheck.root;
+	       rooted=rootcheck.root===true;
 	} else {
 		rooted=false;
 	}
 
-if (rooted){
-	detecthomemethod();   // Settings > TV > webOS version: get this ready before Settings is ever opened
-}
-
+let fresh;
 			if (noappperm){
 	if (rooted){
 var applistraw=await lunacallasroot('luna://com.webos.applicationManager/listApps',{});
-applist=applistraw.apps;
+fresh=applistraw.apps;
 	} else {
 		await toasty("This app required app related permission or root.This app is closing due to insufficient permission...");
 		window.webOSSystem.close();
+		return null;
 	}
 }else {
-applist=permtest.apps;
+fresh=permtest.apps;
 }
 
-applist.some((eachapp) => {if (eachapp.id === appid) {
+fresh=trimapps(fresh);
+fresh.some((eachapp) => {if (eachapp.id === appid) {
 	appdir=eachapp.folderPath;
 	turstedapp=(eachapp.trustLevel==="trusted");
 }});
@@ -456,7 +541,10 @@ if (!(turstedapp || rooted )) {
 		await toasty("This app required trusted trustLevel or root.Thing will break without either of those. ");
 	
 }
+return fresh;
 }
+
+let drawerlater=false;     // the first start draws the bottom bar first and the (hidden) app menu a moment later
 
 function render() {
 	if(!applist){ return; }
@@ -464,9 +552,10 @@ function render() {
 	applist.forEach((eachapp) => {byid[eachapp.id]=eachapp;});
 	const barapps=pinnedids().filter((eachid) => byid[eachid] && !ishidden(eachid)).map((eachid) => byid[eachid]);
 	placetiles(appbar,barapps.map((eachapp) => tilefor(eachapp,true)),1);   // the Apps button stays first
+	renderrecent();
+	if(drawerlater){ return; }
 	placetiles(appluncher,drawertilelist(),0);
 	renderfolderbar();
-	renderrecent();
 }
 
 // ---- recent apps: the apps launched from here, newest first, shown as a row above the bottom bar (see the Apps settings)
@@ -529,6 +618,11 @@ function forgetapp(id){
 		delete names[id];
 		settings.names=names;
 	}
+	if(settings.icons && settings.icons[id]!==undefined){
+		const icons=Object.assign({},settings.icons);
+		delete icons[id];
+		settings.icons=icons;
+	}
 	savesettings();
 	recent=recent.filter((each) => each!==id);
 	try {
@@ -573,7 +667,7 @@ async function uninstallapp(id){
 
 async function reload() {
 
-	let newapplist, newapplistraw;
+	let newapplistraw;
 	if (noappperm){
 newapplistraw=await lunacallasroot('luna://com.webos.applicationManager/listApps',{});
 
@@ -581,8 +675,12 @@ newapplistraw=await lunacallasroot('luna://com.webos.applicationManager/listApps
 newapplistraw=await lunacall('luna://com.webos.applicationManager/listApps',{});
 
 }
-	newapplist=newapplistraw.apps;
+	if(!newapplistraw || !Array.isArray(newapplistraw.apps)){ return; }
+	setapplist(trimapps(newapplistraw.apps));
+}
 
+// a new app list from the TV: redraw only when something in it changed
+function setapplist(newapplist){
 if (!( JSON.stringify(applist) === JSON.stringify(newapplist) ) ) {
 	applist=newapplist;
 	syncsystemfolders();
@@ -591,17 +689,64 @@ tilecache.drawer.clear();
 tilecache.recent.clear();
 render();
 }
-
+saveappcache();
 }
+
+let homestarted=false;    // the screen has been drawn once (from the saved list, or from the TV's answer)
+
+function starthome(){
+	if(homestarted){ return; }
+	homestarted=true;
+	syncsystemfolders();
+	// what is on screen first: the bottom bar. The app menu is hidden until the Apps button opens it, and making its tiles is
+	// most of the work, so that waits until the bar has been shown
+	drawerlater=!realappbarbtu.checked;
+	render();
+	try { performance.mark("openlauncher-drawn"); } catch(e) {}     // how long the start took (Performance panel, or the inspector)
+	if(drawerlater){
+		requestAnimationFrame(() => setTimeout(() => {
+			drawerlater=false;
+			render();
+		},0));
+	}
+	if(rooted){
+		detecthomemethod();   // Settings > TV > webOS version: get this ready before Settings is ever opened
+	}
+	if(typeof onlaunchersettled==="function"){ onlaunchersettled(); }
+}
+
 async function inithomescreen() {
-await initpermcheck();
 loadsettings();
-syncsystemfolders();
 loadrecent();
 editbtn.addEventListener("click",toggleedit);
 realappbarbtu.addEventListener("change",drawerchanged);
 appbar.addEventListener("mouseenter",barhovered);
-render();
+const cache=readappcache();
+if(cache){
+	usecache(cache);
+	starthome();         // drawn now, from the last run
+}
+let fresh=null;
+try {
+	fresh=await initpermcheck();
+} catch(e) {}
+if(fresh===null){ return; }     // the TV didn't answer (or the launcher is closing): keep what is shown
+if(!cache){
+	applist=fresh;
+	saveappcache();
+	starthome();
+	return;
+}
+const changed=cache.rooted!==rooted || cache.trusted!==turstedapp;
+setapplist(fresh);
+if(changed){
+	// icon paths and the Settings rows that need root depend on these
+	tilecache.bar.clear();
+	tilecache.drawer.clear();
+	tilecache.recent.clear();
+	applyprefs();
+	if(rooted){ detecthomemethod(); }
+}
 
 }
 
