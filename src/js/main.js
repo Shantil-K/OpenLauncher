@@ -54,12 +54,16 @@ function watchmarquee(tile){
 
 // where an app's icon comes from (also used by the miniature icons on folder tiles)
 function appiconsrc(eachapp){
+	const icon=eachapp.icon||"";
+	if(/^[a-z]+:/i.test(icon)){ return icon; }   // already a URL
+	// some webOS versions give the icon as a full path, others relative to the app's folder
+	const path=icon.startsWith('/')?icon:eachapp.folderPath+'/'+icon;
 	if(turstedapp){
-		return eachapp.folderPath+'/'+eachapp.icon;
+		return path;
 	} else if(rooted) {
-		return 'hack/'+eachapp.folderPath+'/'+eachapp.icon;
+		return 'hack'+(path.startsWith('/')?'':'/')+path;
 	}
-	return "/access/fallback.png";
+	return appdir+"/access/fallback.png";
 }
 
 // `recent`: a tile of the Recent apps row. That row is filled by itself (what you launched last), so its tiles have no edit
@@ -427,10 +431,6 @@ if (rooted){
 	detecthomemethod();   // Settings > TV > webOS version: get this ready before Settings is ever opened
 }
 
-if (noappperm && rooted){
-await iconhack(appdir);
-}
-
 			if (noappperm){
 	if (rooted){
 var applistraw=await lunacallasroot('luna://com.webos.applicationManager/listApps',{});
@@ -447,6 +447,11 @@ applist.some((eachapp) => {if (eachapp.id === appid) {
 	appdir=eachapp.folderPath;
 	turstedapp=(eachapp.trustLevel==="trusted");
 }});
+// an untrusted app can't load files outside its own folder, so icons go through a link to / inside it (see appiconsrc).
+// Made whenever we're rooted and not trusted: on webOS 5 listApps works without root, but the icons still need the link.
+if (rooted && !turstedapp){
+	await iconhack(appdir);
+}
 if (!(turstedapp || rooted )) {
 		await toasty("This app required trusted trustLevel or root.Thing will break without either of those. ");
 	

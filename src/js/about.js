@@ -4,7 +4,7 @@
 // wallpaper, the screen, the TV, and the GitHub project. Some facts need the TV (model, firmware) or root (the backup file),
 // or the internet (the latest release, only when you press Check for updates); those say so when they are not available.
 
-const APP_RELEASE="2.0.1";       // must equal "version" in appinfo.json and the release tag (vX.Y.Z); set both with scripts/set-version.sh
+const APP_RELEASE="2.0.2";       // must equal "version" in appinfo.json and the release tag (vX.Y.Z); set both with scripts/set-version.sh
 const GITHUB_REPO="Shantil-K/OpenLauncher";
 const GITHUB_API="https://api.github.com/repos/"+GITHUB_REPO+"/releases?per_page=1";   // per_page=1 of ALL releases: "latest" skips pre-releases
 const LAST_BACKUP_KEY='openlauncher.lastbackup';
