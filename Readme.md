@@ -19,10 +19,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Shantil-K/OpenLauncher/releases/download/v1.0.1/OpenLauncher-demo.mp4">
-    <img src="docs/demo.webp" alt="OpenLauncher demo: video wallpaper, folders, remote control, settings and self-update" width="800">
+  <a href="https://github.com/Shantil-K/OpenLauncher/releases/download/v3.0.0/OpenLauncher-demo.mp4">
+    <img src="docs/demo.webp" alt="OpenLauncher demo: home screen, app menu and folders, running apps, Edit mode and settings" width="800">
   </a><br>
-  <a href="https://github.com/Shantil-K/OpenLauncher/releases/download/v1.0.1/OpenLauncher-demo.mp4"><b>▶ Watch the full demo (1:46)</b></a>
+  <a href="https://github.com/Shantil-K/OpenLauncher/releases/download/v3.0.0/OpenLauncher-demo.mp4"><b>▶ Watch the demo (1:01)</b></a>
 </p>
 
 # Features
