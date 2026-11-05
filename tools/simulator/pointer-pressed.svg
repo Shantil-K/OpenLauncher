@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- OpenLauncher simulator pointer, pressed: the same shape, a little smaller, filled with the launcher's cyan accent.
+       Original artwork, part of OpenLauncher, GPLv3. -->
+  <defs><filter id="s" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.8" flood-color="#000" flood-opacity="0.5"/></filter></defs>
+  <path filter="url(#s)" d="M6 6 H26 A20 20 0 1 1 6 26 Z" fill="#50dce6" stroke="#ffffff" stroke-width="3.4" stroke-linejoin="round"/>
+</svg>

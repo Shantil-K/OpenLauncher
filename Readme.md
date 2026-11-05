@@ -108,6 +108,9 @@ Every push to `main` and every pull request is checked and built by GitHub Actio
 ([Build](https://github.com/Shantil-K/OpenLauncher/actions/workflows/build.yml)); the `.ipk` of each run can be downloaded
 from the run's page for 14 days, for trying a change on a TV.
 
+To try it or record a demo without a TV, [`tools/simulator`](tools/simulator) runs the launcher in Chrome on a computer,
+with your TV's apps and settings, the remote on the keyboard and the Magic Remote's pointer.
+
 Releases (maintainers):
 
 1. `scripts/set-version.sh X.Y.Z`, add `.github/release-notes/vX.Y.Z.md`, commit.

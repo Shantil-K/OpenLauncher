@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<!-- OpenLauncher simulator: shows the launcher in an exact 1920x1080 frame, scaled to fit the screen, for devices that
+     aren't 16:9 (a tablet recording a demo). Open sim/frame.html instead of index.html. -->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenLauncher (16:9)</title>
+<style>
+	html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+	iframe { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; }
+</style>
+</head>
+<body>
+<iframe id="tv" src="../index.html" allow="autoplay; fullscreen"></iframe>
+<script src="frame.js"></script>
+</body>
+</html>

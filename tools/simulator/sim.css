@@ -1,0 +1,18 @@
+/* OpenLauncher simulator (tools/simulator): the TV-style pointer, and the simulator's stand-in for the TV's notifications */
+/* the system cursor is hidden; mock.js draws the pointer in the page so recordings show it */
+html, html * { cursor: none !important; }
+/* while the arrow keys are in use the page ignores the mouse, so nothing stays hovered under the hidden pointer */
+html.simnopointer body { pointer-events: none; }
+#simpointer { display: none; position: fixed; top: 0; left: 0; width: 64px; height: 64px; z-index: 2147483647; pointer-events: none; will-change: transform; }
+#simpointer img { display: block; width: 64px; height: 64px; transform-origin: 6px 6px; }
+#simpointer.in img { animation: simpointer-in 0.16s ease-out; }
+#simpointer.out img { animation: simpointer-out 0.15s ease-in forwards; }
+@keyframes simpointer-in { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes simpointer-out { from { transform: scale(1); opacity: 1; } to { transform: scale(0.3); opacity: 0; } }
+.simtoast {
+	position: fixed; left: 50%; bottom: 6vh; z-index: 99999; max-width: 60vw; padding: 1.6vh 2.4vw;
+	font-family: "Plus Jakarta Sans", sans-serif; font-size: 2.2vh; color: #fff;
+	background: rgba(30, 30, 36, 0.94); border-radius: 1vh; box-shadow: 0 0.6vh 2vh rgba(0,0,0,0.5);
+	opacity: 0; transform: translate(-50%, 2vh); transition: opacity 0.3s ease, transform 0.3s ease; pointer-events: none;
+}
+.simtoast.on { opacity: 1; transform: translate(-50%, 0); }
