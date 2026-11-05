@@ -95,8 +95,27 @@ function setposition(layer,pos){
 let lastclock=null;
 let lastdate=null;
 
+// "Same as TV": the TV's own 12/24-hour setting (systemservice "timeFormat", HH12 or HH24; a TV that doesn't say is 24-hour).
+// Found by Glasshouse's research (github.com/rorygallagher2024/glasshouse, MIT).
+let tvhour12=false;
+
+function hour12(p){
+	return p.clockHour12==="tv"?tvhour12:p.clockHour12===true;
+}
+
+async function readtvclock(){
+	try {
+		const result=await lunacall('luna://com.webos.service.systemservice/getPreferences',{"keys":["timeFormat"]});
+		const next=!!result && result.timeFormat==="HH12";
+		if(next!==tvhour12){
+			tvhour12=next;
+			if(prefs.clockHour12==="tv"){ applyclock(prefs); }
+		}
+	} catch(e) {}
+}
+
 function applyclock(p){
-	clockstack.className="clockstyle-"+p.clockStyle+(p.clockSeconds?"":" noseconds")+(p.clockHour12?" hour12":"");
+	clockstack.className="clockstyle-"+p.clockStyle+(p.clockSeconds?"":" noseconds")+(hour12(p)?" hour12":"");
 	setposition(clock,p.clockPos);
 	// the date either sits under the clock or on its own layer somewhere else on screen
 	const together=(p.datePos==="with-clock");
@@ -121,7 +140,7 @@ function tickclock(){
 			clockhs.setAttribute("transform","rotate("+a.s+" 100 100)");
 		}
 	} else if(style!=="off"){
-		const d=clockdisplay(now,prefs.clockHour12);
+		const d=clockdisplay(now,hour12(prefs));
 		const key=d.h+d.m+d.s+d.suffix;
 		if(key!==lastclock){
 			lastclock=key;

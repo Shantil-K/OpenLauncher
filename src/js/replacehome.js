@@ -117,7 +117,7 @@ async function selfuninstall() {
 	uninstallstate={busy:true,ok:null};
 	if(settingstab==="about"){ renderpane(); }
 	if(rooted){
-		const command=RESTORE_STEPS+"; "+POWERON_REMOVE_COMMAND+"; rm -rf /var/lib/webosbrew/openlauncher; "+
+		const command=RESTORE_STEPS+"; "+POWERON_REMOVE_COMMAND+"; "+DEBUGGER_OPEN_COMMAND+"; rm -rf /var/lib/webosbrew/openlauncher; "+
 			"luna-send -n 1 -f 'luna://com.webos.appInstallService/remove' '{\"id\":\""+appid+"\",\"subscribe\":false}'; "+
 			"restart sam";
 		try {

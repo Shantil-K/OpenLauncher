@@ -145,7 +145,7 @@ function addcontrols(tile,eachapp,inbar){
 		// names and icons are changed in Settings > Apps > Names and icons
 		if(canuninstall(eachapp)){
 			const trashbtn=ctlbutton(() => openuninstallquestion(tile));
-			trashbtn.classList.add("dangerctl","wide");
+			trashbtn.classList.add("dangerctl");
 			setctl(trashbtn,"Uninstall","trash");
 			appctl.appendChild(trashbtn);
 		}
@@ -212,6 +212,7 @@ function updatetile(tile,id,inbar,app){
 		}
 	}
 	tile.classList.toggle("hiddenapp",ishidden(id));
+	tile.classList.toggle("unplugged",typeof inputunplugged==="function" && inputunplugged(id));
 	tile.classList.toggle("pinnedapp",!inbar && ispinned(id));
 	tile.classList.toggle("carried",!!carrying && carrying.id===id && carrying.inbar===inbar);
 	if(editing && tile.makecontrols){ tile.makecontrols(); }
@@ -253,7 +254,7 @@ function ctlbutton(onclick){
 const APP_NAME_MAX=40;
 
 function appdisplayname(app){
-	return (settings.names && settings.names[app.id]) || app.title;
+	return (settings.names && settings.names[app.id]) || (typeof inputname==="function" && inputname(app.id)) || app.title;
 }
 
 // "" (or the TV's own name) goes back to the original
@@ -459,6 +460,7 @@ function toggleedit(){
 // closing the app menu ends Edit mode too (as if Done had been pressed)
 function drawerchanged(){
 	if(!realappbarbtu.checked && editing){ toggleedit(); }
+	if(realappbarbtu.checked){ layoutmenu(); }      // the folder chips can only be measured while they show
 }
 
 // ---- starting fast: the app list (and whether we're rooted or trusted) from the last run is saved, so the next start draws
@@ -556,6 +558,84 @@ function render() {
 	if(drawerlater){ return; }
 	placetiles(appluncher,drawertilelist(),0);
 	renderfolderbar();
+	layoutmenu();
+}
+
+// The app menu's dark panel sits the same distance (MENU_GAP_VH) from the screen's left, top and right edges. Its first column
+// of apps lines up with the first tile of the bottom bar (the Apps button) and of the Recent row, and the apps are that same
+// distance from the panel's top and bottom, so the spacing reads the same all round. It is as tall as its rows (at least
+// MENU_MIN_ROWS; it scrolls when they don't fit), and with Recent apps showing it stops above that row when all its apps fit
+// there, otherwise it covers it down to the bar, as it always did.
+const MENU_GAP_VH=1.6;     // from the screen's edge to the panel
+const MENU_PAD_VH=2.4;     // used until the bar has been laid out
+const MENU_MIN_ROWS=2;     // a folder with a few apps still gets a panel this tall
+
+function layoutmenu(){
+	const width=window.innerWidth;
+	const height=window.innerHeight;
+	if(!(width>0 && height>0)){ return; }
+	const root=document.documentElement.style;
+	const gap=height*MENU_GAP_VH/100;
+	const tile=prefs.menuSize*width/100;
+	const folders=maindiv.classList.contains("hasfolders");
+	// where the bar's first tile (the Apps button) starts: the apps' first column starts there too
+	const barfirst=appbar.querySelector(".appitem");
+	const barleft=barfirst?barfirst.getBoundingClientRect().left:0;
+	const pad=barleft>gap?barleft-gap:height*MENU_PAD_VH/100;
+	const panel=width-2*gap;
+	const count=Math.max(1,appluncher.children.length);
+	const fit=Math.max(1,Math.floor((panel-2*pad)/tile));
+	// every view has the same columns, so an app stays in the same place in a folder; what is left of the width is shared out
+	// between the columns, so the last column ends as far from the panel's right edge as the first starts from its left
+	const cols=fit;
+	const rows=Math.ceil(count/cols);
+	const colgap=cols>1?Math.max(0,(panel-2*pad-cols*tile)/(cols-1)):0;
+	// an app's picture sits `inset` inside its tile: the folder chips line up with the pictures, and sit as far below the
+	// panel's top as the pictures sit from its left
+	const first=appluncher.querySelector(".appitem");
+	const firsticon=first?first.querySelector(".appicon"):null;
+	// the exact height (offsetHeight rounds: 115 for a 115.19 px tile, and four of those made the menu scroll by a pixel)
+	const tileh=first && first.offsetHeight>0?first.getBoundingClientRect().height:tile;
+	const inset=first && firsticon && first.offsetWidth>0?Math.max(0,(first.offsetWidth-firsticon.offsetWidth)/2):0;
+	const chip=folderbar.firstElementChild;
+	const chiph=chip && chip.offsetHeight>0?chip.offsetHeight:height*0.045;
+	const barheight=folders?pad+inset+chiph:0;
+	const top=gap+barheight;
+	// Settings > Apps > Row spacing: Even spaces rows like columns (a tile's own padding spaces the pictures, plus the shared
+	// out width; with names on a tile is taller, its name sitting between the rows); Wider and Widest add a quarter or half
+	// of a tile
+	const rowgap=Math.round(colgap+tile*(typeof prefs.menuRowGap==="number"?prefs.menuRowGap:0));
+	const shownrows=Math.max(rows,MENU_MIN_ROWS);
+	const full=pad+shownrows*tileh+(shownrows-1)*rowgap+pad;
+	const barh=parseFloat(getComputedStyle(appbar).height) || height*0.15;
+	let bottom=height-barh;
+	let above=false;
+	if(maindiv.classList.contains("has-recent")){
+		// measured while it shows (when the menu stops above it, it stays on screen); before that, estimated: it sits 1.5vh
+		// above the bar, its tiles --recenth tall under its "Recent" label
+		const shown=recentrow.offsetHeight>0;
+		const recenth=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--recenth"))*height/100 || 0;
+		const recenttop=shown?recentrow.getBoundingClientRect().top:height-barh-height*0.015-recenth-recentlabel.offsetHeight-height*0.01;
+		if(recenttop-gap-top>=full){
+			bottom=recenttop-gap;
+			above=true;
+		}
+	}
+	maindiv.classList.toggle("recentabove",above);
+	root.setProperty("--menucols",String(cols));
+	root.setProperty("--menurowgap",rowgap+"px");
+	root.setProperty("--menucolgap",(Math.floor(colgap*100)/100)+"px");
+	root.setProperty("--menuw",Math.round(panel)+"px");
+	root.setProperty("--menuleft",Math.round(gap)+"px");
+	root.setProperty("--menutop",Math.round(top)+"px");
+	// everything fits: no scrolling at all (rounding can't leave a pixel to scroll)
+	const fits=full<=bottom-top;
+	maindiv.classList.toggle("menufits",fits);
+	root.setProperty("--menuh",(fits?Math.ceil(full):Math.floor(bottom-top))+"px");
+	root.setProperty("--menupad",Math.round(pad)+"px");
+	root.setProperty("--menupadtop",Math.round(pad)+"px");
+	root.setProperty("--menubarh",Math.round(barheight)+"px");
+	root.setProperty("--menuinset",Math.round(inset)+"px");
 }
 
 // ---- recent apps: the apps launched from here, newest first, shown as a row above the bottom bar (see the Apps settings)
@@ -712,7 +792,8 @@ function starthome(){
 	if(rooted){
 		detecthomemethod();   // Settings > TV > webOS version: get this ready before Settings is ever opened
 	}
-	if(typeof onlaunchersettled==="function"){ onlaunchersettled(); }
+	applydebugger();        // keep the TV's web debugger off the network (debugger.js)
+	refreshinputs();        // which HDMI inputs have something plugged in (inputs.js)
 }
 
 async function inithomescreen() {

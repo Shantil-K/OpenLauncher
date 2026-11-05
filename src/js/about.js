@@ -2,7 +2,7 @@
 // Settings > App info: the essentials. Which version this is and updating it, the TV it runs on, what it is allowed to do,
 // and where the project lives. The internet is only used when you press Check for updates.
 
-const APP_RELEASE="2.1.0";       // must equal "version" in appinfo.json and the release tag (vX.Y.Z); set both with scripts/set-version.sh
+const APP_RELEASE="3.0.0";       // must equal "version" in appinfo.json and the release tag (vX.Y.Z); set both with scripts/set-version.sh
 const GITHUB_REPO="Shantil-K/OpenLauncher";
 const GITHUB_API="https://api.github.com/repos/"+GITHUB_REPO+"/releases?per_page=1";   // per_page=1 of ALL releases: "latest" skips pre-releases
 const ABOUT_APP_ID="com.homebrew.openlauncher";

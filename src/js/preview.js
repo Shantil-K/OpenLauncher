@@ -34,7 +34,7 @@ function previewclock(p,now){
 			'<circle class="pvhub" cx="100" cy="100" r="6"/></svg>';
 		return box;
 	}
-	const time=clockdisplay(now,p.clockHour12);
+	const time=clockdisplay(now,hour12(p));
 	const box=el("div","pvtime"+(style==="stacked"?" stacked":""));
 	if(style==="stacked"){
 		box.appendChild(el("span","",time.h));

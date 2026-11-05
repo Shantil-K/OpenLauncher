@@ -16,6 +16,13 @@ function updateinfo(){
 	infosource.textContent=playing.source;
 	infoseekrow.style.display=playing.video?"":"none";
 	infoloop.style.display=playing.video?"":"none";
+	// a picture moves on to the next one; with only one wallpaper there is nothing to move on to
+	const label=playing.video?"Skip video":"Next picture";
+	if(infoskip.label!==label){
+		infoskip.label=label;
+		infoskip.innerHTML=iconsvg("skip")+"<span>"+label+"</span>";
+	}
+	infoskip.style.display=(bgmode==="custom" && customitems.length<=1)?"none":"";
 	const looping=islooping();
 	infoloop.classList.toggle("on",looping);
 	infoloop.setAttribute("aria-pressed",looping?"true":"false");

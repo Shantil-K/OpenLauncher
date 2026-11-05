@@ -93,7 +93,7 @@ function contextelements() {
 	if(settingsisopen()){ return within(settingspanel,"button, input, textarea"); }
 	if(infoisopen()){ return within(infocard,"button, input"); }
 	if(realappbarbtu.checked){
-		return within(folderbar,"button").concat(within(appluncher,".appitem"),[settingsbtn,runningbtn,editbtn].filter(isvisible),within(appbar,".appitem"));
+		return within(folderbar,"button").concat(within(appluncher,".appitem"),within(recentrow,".appitem"),[settingsbtn,runningbtn,editbtn].filter(isvisible),within(appbar,".appitem"));
 	}
 	return within(appbar,".appitem").concat(within(recentrow,".appitem"),[infobtn].filter(isvisible));
 }
@@ -146,7 +146,8 @@ function defaultfocus(list) {
 		const choices=list.filter((el) => folderlist.contains(el));
 		return choices.filter((el) => el.classList.contains("on"))[0] || choices[0] || list[0] || null;
 	}
-	if(appmenuopen() || infoisopen()){ return list[0] || null; }
+	if(appmenuopen()){ return within(appmenulist,"button")[0] || list[0] || null; }      // the list, not the close button
+	if(infoisopen()){ return list[0] || null; }
 	if(realappbarbtu.checked){ return within(appluncher,".appitem")[0] || list[0] || null; }
 	return list[0] || null;
 }
@@ -179,7 +180,7 @@ function istyping() {
 
 // ---- the menu OK opens on an app in Edit mode
 function closeappmenu() {
-	maindiv.classList.remove("menuopen");
+	maindiv.classList.remove("menuopen","runningopen");
 }
 
 function openappmenu(tile) {
@@ -187,7 +188,9 @@ function openappmenu(tile) {
 	returnto=tile;
 	const inbar=appbar.contains(tile);
 	const app=applist.filter((each) => each.id===id)[0];
+	maindiv.classList.remove("runningopen");
 	appmenutitle.textContent=app?appdisplayname(app):id;
+	appmenusub.textContent="";
 	appmenulist.innerHTML="";
 	const add=(label,action,keepopen) => {
 		const button=el("button","sopt",label);
@@ -213,7 +216,7 @@ function openappmenu(tile) {
 		add("Uninstall...",() => askuninstall(tile,id,app),true).classList.add("danger");
 	}
 	maindiv.classList.add("menuopen");
-	setfocus(within(appmenu,"button")[0] || null);
+	setfocus(within(appmenulist,"button")[0] || null);
 }
 
 // the tile's own Uninstall button (pointer): straight to the question, and Cancel just closes it
@@ -229,6 +232,7 @@ function openuninstallquestion(tile) {
 // "Uninstall..." asks first; the focus starts on Cancel so a stray OK does no harm
 function askuninstall(tile,id,app,direct) {
 	appmenutitle.textContent="Uninstall "+appdisplayname(app)+"?";
+	appmenusub.textContent="";
 	appmenulist.innerHTML="";
 	const cancel=el("button","sopt","Cancel");
 	cancel.addEventListener("click",() => { if(direct){ closeappmenu(); } else { openappmenu(tile); } });
@@ -315,7 +319,7 @@ function shortcut(code) {
 	} else if(code===KEY_RED){
 		if(infoisopen()){ closeinfo(); } else if(!realappbarbtu.checked && !settingsisopen()){ infobtn.click(); }
 	} else if(code===KEY_GREEN){
-		if(appmenuopen() && appmenutitle.textContent.indexOf("Running apps")===0){ closeappmenu(); }
+		if(appmenuopen() && maindiv.classList.contains("runningopen")){ closeappmenu(); }
 		else if(!appmenuopen() && !settingsisopen() && !renameopen() && !folderpickeropen() && !filesopen()){ openrunning(); }
 	} else if(code===KEY_BLUE){
 		if(realappbarbtu.checked && !settingsisopen()){ editbtn.click(); }
@@ -426,6 +430,8 @@ function oncursorstate(event) {
 }
 
 function initdpad() {
+	appmenuclose.innerHTML=iconsvg("close");
+	appmenuclose.addEventListener("click",closeappmenu);
 	// opening the drawer moves focus to its first app; closing it goes back to what opened it (the Apps button)
 	realappbarbtu.addEventListener("change",() => {
 		if(!keyboardmode){ return; }

@@ -12,7 +12,6 @@ name: Release
 on:
   push:
     tags: ["v*"]
-  workflow_dispatch: # run by hand to test the build; it publishes nothing
 
 permissions:
   contents: write      # create the release
@@ -54,21 +53,12 @@ jobs:
       - name: Build ipk
         run: ares-package src -o .
 
-      - name: Keep the build (manual runs)
-        if: github.ref_type != 'tag'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: ipk
-          path: com.homebrew.openlauncher_*_all.ipk
-
       - name: Attest build provenance
-        if: github.ref_type == 'tag'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: com.homebrew.openlauncher_*_all.ipk
 
       - name: Publish release
-        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

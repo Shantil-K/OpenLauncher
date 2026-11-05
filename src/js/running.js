@@ -53,9 +53,9 @@ async function openrunning(){
 	}
 	if(!appmenuopen() && typeof dpadfocus!=="undefined" && dpadfocus){ returnto=dpadfocus; }
 	appmenutitle.textContent="Running apps";
+	appmenusub.textContent="Looking...";
 	appmenulist.innerHTML="";
-	appmenulist.appendChild(el("div","sstatus","Looking..."));
-	maindiv.classList.add("menuopen");
+	maindiv.classList.add("menuopen","runningopen");
 	runningbusy=true;
 	const ids=await runningapps();
 	runningbusy=false;
@@ -65,16 +65,13 @@ async function openrunning(){
 
 function showrunning(ids){
 	appmenulist.innerHTML="";
+	appmenutitle.textContent="Running apps";
 	if(ids===null){
-		appmenutitle.textContent="Running apps";
-		appmenulist.appendChild(el("div","sstatus","The TV didn't say which apps are running."));
-		appmenulist.appendChild(runningbutton("Close",null,closeappmenu));
+		appmenusub.textContent="The TV didn't say which apps are running.";
 	} else if(ids.length===0){
-		appmenutitle.textContent="Running apps";
-		appmenulist.appendChild(el("div","sstatus","Nothing else is running."));
-		appmenulist.appendChild(runningbutton("Close",null,closeappmenu));
+		appmenusub.textContent="Nothing else is running.";
 	} else {
-		appmenutitle.textContent="Running apps: OK closes one";
+		appmenusub.textContent="Select an app to close it";
 		ids.forEach((id) => {
 			appmenulist.appendChild(runningbutton(runningname(id),id,() => closeone(id)));
 		});
@@ -82,7 +79,7 @@ function showrunning(ids){
 		all.classList.add("danger");
 		appmenulist.appendChild(all);
 	}
-	setfocus(within(appmenu,"button")[0] || null);
+	setfocus(within(appmenulist,"button")[0] || appmenuclose);
 }
 
 function runningbutton(label,id,onclick){
@@ -115,7 +112,7 @@ async function refreshrunning(message){
 	await pause(RUNNING_SETTLE_MS);
 	const ids=await runningapps();
 	if(message){ showmovetoast(message); }
-	if(appmenuopen() && appmenutitle.textContent.indexOf("Running apps")===0){ showrunning(ids); }
+	if(appmenuopen() && maindiv.classList.contains("runningopen")){ showrunning(ids); }
 }
 
 async function closeone(id){
@@ -125,7 +122,7 @@ async function closeone(id){
 }
 
 async function closeall(ids){
-	appmenutitle.textContent="Closing...";
+	appmenusub.textContent="Closing...";
 	let closed=0;
 	for(let i=0;i<ids.length;i++){
 		if(await closerunning(ids[i])){ closed++; }

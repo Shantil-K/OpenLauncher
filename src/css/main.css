@@ -13,12 +13,17 @@
     --bartile: 5vw;
     --menutile: 5vw;
     --barh: 15vh;
-    --menurow: 2;
     --barname: 1.5vh;
     --menuname: 1.5vh;
     --recenth: 15vh;
     --shiftx: 0px;
     --shifty: 0px;
+    /* Settings > Apps > Corners: 0 sharp, 1 rounded, 1.8 extra round (every rounded corner is scaled by it), and the
+       app icons' own corners */
+    --round: 1;
+    --iconround: 0;
+    /* the app menu's dark panel: the same gap from the screen's edge on the top, left and right */
+    --menugap: 1.6vh;
 }
 
 #appluncher,#appbar {
@@ -32,22 +37,32 @@
     grid-template-rows: var(--barh);
 }
 #appluncher {
-    grid-template-columns: repeat(auto-fill, var(--menutile));
-    grid-template-rows: repeat(auto-fill, calc(var(--menutile) * var(--menurow)));
+    grid-template-columns: repeat(var(--menucols, 1), var(--menutile));
+    /* the first column lines up with the bottom bar's first tile (layoutmenu in main.js) */
+    justify-content: start;
+    align-content: safe center;
+    align-items: start;
+    box-sizing: border-box;
+    padding: var(--menupadtop, 2.4vh) var(--menupad, 2.4vh) var(--menupad, 2.4vh);
+    /* rows as tall as their tiles, with the space between rows as a gap (layoutmenu sets it), so the last row ends at its tiles */
+    grid-auto-rows: min-content;
+    row-gap: var(--menurowgap, 0px);
+    column-gap: var(--menucolgap, 0px);
 }
 #realappbarbtu {
     display: none;
 }
 #appluncher {
-	overflow-y: overlay !important;
-    overflow-y: scroll;
-    scrollbar-gutter: stable;
+    overflow-x: hidden;
+    overflow-y: auto;
         background-color: rgba(0, 0, 0, var(--menuopacity, 0.5));
 	position: absolute;
-	top: 1vh;
-    left: 1vw;
-    width: calc(100vw - 2vw);
-        height: calc(100vh - var(--barh));
+	/* sized to what is in it by layoutmenu() in main.js */
+	top: var(--menutop, var(--menugap));
+    left: var(--menuleft, var(--menugap));
+    width: var(--menuw, calc(100vw - 2 * var(--menugap)));
+        height: var(--menuh, calc(100vh - var(--barh)));
+    border-radius: calc(1.2vh * var(--round, 1));
 	    scrollbar-width: none;
 }
 
@@ -70,14 +85,15 @@
     bottom: 0px;
     position: absolute;
     /* same box as #appluncher so the bar's columns line up with the drawer's */
-    left: 1vw;
-    width: calc(100vw - 2vw);
+    left: var(--menugap);
+    width: calc(100vw - 2 * var(--menugap));
         height: var(--barh);
 }
 
 .appicon {
 	    width: 100%;
     height: auto;
+    border-radius: var(--iconround, 0);
 }
 
 .appitem {
@@ -167,7 +183,7 @@ z-index:9999;
 	color: rgb(255,255,255);
 	background-color: rgba(0,0,0,0.6);
 	border: 2px solid rgb(255,255,255);
-	border-radius: 6px;
+	border-radius: calc(6px * var(--round, 1));
 }
 #settingsbtn { padding: 0.6vh 0.9vw; display: flex; align-items: center; }
 #settingsbtn img { height: 3.4vh; width: 3.4vh; display: block; }
@@ -181,28 +197,38 @@ z-index:9999;
 	left: 0;
 	right: 0;
 	bottom: 0;
+	/* a 2x2 square over the tile: Hide and Folder on top, Uninstall and Move below */
 	grid-template-columns: 1fr 1fr;
-	align-content: center;
+	grid-template-rows: 1fr 1fr;
+	align-content: stretch;
 	gap: 4px;
 	padding: 6px;
 	box-sizing: border-box;
 	background-color: rgba(0,0,0,0.65);
 }
 #maindiv.editing .appitem:hover .appctl { display: grid; }
+.appctl button, .movezone {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 0;
+	min-height: 0;
+}
 .appctl button {
 	font-family: inherit;
 	padding: 0.5vh 0;
 	color: rgb(255,255,255);
 	background-color: rgba(255,255,255,0.15);
 	border: 1px solid rgb(255,255,255);
-	border-radius: 4px;
+	border-radius: calc(4px * var(--round, 1));
 }
 .appctl button.wide { grid-column: 1 / -1; }
 .appctl button:hover { background-color: rgba(var(--accent), 0.7); }
 .appctl button.dangerctl:hover { background-color: rgba(255, 90, 90, 0.85); }
 /* rest the pointer here to pick the app up: the pink fill is the countdown (keep the .875s in step with PICKUP_MS) */
+/* an app that can't be uninstalled has three buttons: Move takes the whole bottom row */
+.movezone:nth-child(3) { grid-column: 1 / -1; }
 .movezone {
-	grid-column: 1 / -1;
 	position: relative;
 	overflow: hidden;
 	text-align: center;
@@ -210,7 +236,7 @@ z-index:9999;
 	color: rgb(255,255,255);
 	background-color: rgba(255,255,255,0.15);
 	border: 1px solid rgb(255,255,255);
-	border-radius: 4px;
+	border-radius: calc(4px * var(--round, 1));
 }
 .appctl svg {
 	display: block;
@@ -251,7 +277,7 @@ z-index:9999;
 	color: rgb(255,255,255);
 	background-color: rgba(0,0,0,0.75);
 	border: 2px solid rgb(var(--accent));
-	border-radius: 6px;
+	border-radius: calc(6px * var(--round, 1));
 	pointer-events: none;
 }
 #maindiv.carrying #carryhint { display: block; }
@@ -358,7 +384,7 @@ z-index:9999;
 	color: rgb(255,255,255);
 	background-color: rgba(18,18,24,0.97);
 	border: 2px solid rgba(var(--accent), 0.85);
-	border-radius: 1.6vh;
+	border-radius: calc(1.6vh * var(--round, 1));
 }
 #maindiv.settingsopen #settingsbackdrop { display: block; }
 #maindiv.settingsopen #settingspanel { display: flex; }
@@ -376,7 +402,7 @@ z-index:9999;
 	background-color: rgba(255,255,255,0.1);
 	border: 1px solid rgba(255,255,255,0.4);
 }
-#settingsclose { width: 5.4vh; height: 5.4vh; padding: 0.9vh; border-radius: 0.8vh; }
+#settingsclose { width: 5.4vh; height: 5.4vh; padding: 0.9vh; border-radius: calc(0.8vh * var(--round, 1)); }
 #settingsbody { display: flex; flex: 1; min-height: 0; }
 #settingstabs {
 	display: flex;
@@ -386,7 +412,7 @@ z-index:9999;
 	padding: 2vh 1vw;
 	border-right: 1px solid rgba(255,255,255,0.2);
 }
-.stab { display: flex; align-items: center; gap: 0.8vw; font-size: 2.4vh; padding: 1.4vh 1vw; text-align: left; border-radius: 0.8vh; }
+.stab { display: flex; align-items: center; gap: 0.8vw; font-size: 2.4vh; padding: 1.4vh 1vw; text-align: left; border-radius: calc(0.8vh * var(--round, 1)); }
 .stab.on, .sopt.on { color: rgb(0,0,0); background-color: rgb(var(--accent)); border-color: rgb(var(--accent)); }
 #settingspane { flex: 1; overflow-y: auto; padding: 1vh 2vw; scrollbar-width: none; }
 .srow {
@@ -403,15 +429,15 @@ z-index:9999;
 .shintmark svg { display: block; width: 100%; height: 100%; fill: currentColor; }
 .srow:hover .shintmark, .srow:focus-within .shintmark { opacity: 1; color: rgb(var(--accent)); }
 .scontrol { flex: 1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.8vh 0.6vw; }
-.sopt { font-size: 2vh; padding: 1vh 1.2vw; border-radius: 0.8vh; }
+.sopt { font-size: 2vh; padding: 1vh 1.2vw; border-radius: calc(0.8vh * var(--round, 1)); }
 .swatch { width: 4.4vh; height: 4.4vh; padding: 0; border-radius: 50%; border: 3px solid rgba(255,255,255,0.35); }
 .swatch.on { border-color: rgb(255,255,255); box-shadow: 0 0 0 3px rgb(0,0,0), 0 0 0 5px rgb(255,255,255); }
 .pospicker { display: flex; align-items: center; gap: 1.2vw; }
 .posgrid { display: grid; grid-template-columns: repeat(3, 5vh); grid-template-rows: repeat(3, 2.8vh); gap: 0.6vh; padding: 0.8vh; background-color: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.4); border-radius: 0.8vh; }
-.poscell { padding: 0; border-radius: 0.5vh; }
+.poscell { padding: 0; border-radius: calc(0.5vh * var(--round, 1)); }
 .poscell.on { background-color: rgb(var(--accent)); border-color: rgb(var(--accent)); }
 .picturepicker { display: grid; grid-template-columns: repeat(auto-fill, 12vh); gap: 1vh; width: 100%; }
-.picturepick { width: 12vh; height: 6.75vh; padding: 0; border-radius: 0.8vh; overflow: hidden; border: 3px solid rgba(255,255,255,0.35); }
+.picturepick { width: 12vh; height: 6.75vh; padding: 0; border-radius: calc(0.8vh * var(--round, 1)); overflow: hidden; border: 3px solid rgba(255,255,255,0.35); }
 .picturepick.on { border-color: rgb(var(--accent)); box-shadow: 0 0 0 2px rgba(0,0,0,0.6), 0 0 0 4px rgb(var(--accent)); }
 .picturepick img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .picturepick { position: relative; }
@@ -455,7 +481,7 @@ z-index:9999;
 #settingspreview { display: none; flex: 0 0 24vw; padding: 2vh 1.4vw 2vh 0; overflow: hidden; }
 #settingspreview.on { display: block; }
 .pvtiles { display: flex; flex-direction: column; gap: 1.6vh; }
-.pvscreen { --pv: 0.22; position: relative; width: 100%; height: 0; padding-top: 56.25%; overflow: hidden; border-radius: 0.8vh; border: 1px solid rgba(255,255,255,0.3); background: linear-gradient(160deg, #46587a, #161c2a 70%); color: rgb(255,255,255); text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+.pvscreen { --pv: 0.22; position: relative; width: 100%; height: 0; padding-top: 56.25%; overflow: hidden; border-radius: calc(0.8vh * var(--round, 1)); border: 1px solid rgba(255,255,255,0.3); background: linear-gradient(160deg, #46587a, #161c2a 70%); color: rgb(255,255,255); text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
 .pvscreen > * { position: absolute; }
 .pvlayer { top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; padding: 4%; box-sizing: border-box; }
 .pvlayer[data-v="top"] { justify-content: flex-start; }
@@ -489,10 +515,10 @@ z-index:9999;
 .pvbars .pvrecent { padding-bottom: 1%; }
 .pvtile { --t: var(--bartile); --n: var(--barname); flex: 0 0 auto; width: calc(var(--t) * var(--pv)); margin-right: calc(var(--t) * var(--pv) * 0.18); padding-bottom: 0.4vh; }
 .pvicon { display: block; height: calc(var(--t) * var(--pv)); border-radius: 22%; background: rgba(255,255,255,0.78); }
-.pvname { display: block; width: 70%; height: calc(var(--n) * var(--pv) * 0.9); min-height: 2px; margin: calc(var(--n) * var(--pv) * 0.6) auto 0; border-radius: 99px; background: rgba(255,255,255,0.7); }
+.pvname { display: block; width: 70%; height: calc(var(--n) * var(--pv) * 0.9); min-height: 2px; margin: calc(var(--n) * var(--pv) * 0.6) auto 0; border-radius: calc(99px * var(--round, 1)); background: rgba(255,255,255,0.7); }
 .pvtile.hot .pvicon { box-shadow: 0 0 0 calc(var(--t) * var(--pv) * 0.09) rgb(var(--accent)); }
 .pvmenu { background: linear-gradient(135deg, #e9b866, #5b8fd6 55%, #2f6b4c); }
-.pvgrid { --t: var(--menutile); --n: var(--menuname); top: 2%; left: 1%; right: 1%; bottom: 2%; padding: 3% 3% 0; box-sizing: border-box; overflow: hidden; border-radius: 4px; background: rgba(0,0,0,var(--menuopacity, 0.5)); display: flex; flex-wrap: wrap; align-content: flex-start; }
+.pvgrid { --t: var(--menutile); --n: var(--menuname); top: 2%; left: 1%; right: 1%; bottom: 2%; padding: 3% 3% 0; box-sizing: border-box; overflow: hidden; border-radius: calc(4px * var(--round, 1)); background: rgba(0,0,0,var(--menuopacity, 0.5)); display: flex; flex-wrap: wrap; align-content: flex-start; }
 .pvgrid .pvtile { --t: var(--menutile); --n: var(--menuname); margin-bottom: calc(var(--menutile) * var(--pv) * 0.2); }
 .pvsmall { padding-top: 32%; }
 .sslider { display: flex; align-items: center; justify-content: flex-end; flex: 1; min-width: 0; gap: 1vw; }
@@ -502,19 +528,18 @@ z-index:9999;
 .ssliderval { flex: 0 0 auto; min-width: 4vw; text-align: right; font-size: 2.2vh; font-variant-numeric: tabular-nums; }
 /* the sources of the streamed wallpapers (Settings > Wallpaper) */
 .sources { width: 100%; }
-.sourcerow { display: flex; align-items: center; justify-content: space-between; padding: 0.9vh 1vw; margin-bottom: 0.6vh; background-color: rgba(255,255,255,0.06); border-radius: 0.8vh; }
+.sourcerow { display: flex; align-items: center; justify-content: space-between; padding: 0.9vh 1vw; margin-bottom: 0.6vh; background-color: rgba(255,255,255,0.06); border-radius: calc(0.8vh * var(--round, 1)); }
 .sourcename { font-size: 2.1vh; }
 .sourcecount { font-size: 1.8vh; opacity: 0.7; font-variant-numeric: tabular-nums; }
 /* Settings > App info */
 .srow.nolabel .slabel { display: none; }
 .scontrol > .abouthead, .scontrol > .aboutupdate, .scontrol > .aboutrows { flex: 1 1 100%; }
 .abouthead { display: flex; align-items: center; gap: 1.4vw; margin-bottom: 2vh; }
-.abouticon { flex: 0 0 auto; width: 10vh; height: 10vh; border-radius: 2vh; }
+.abouticon { flex: 0 0 auto; width: 10vh; height: 10vh; border-radius: calc(2vh * var(--round, 1)); }
 .abouttitle { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .aboutname { font-size: 3.4vh; }
 .aboutsub { margin-top: 0.4vh; font-size: 1.8vh; opacity: 0.7; }
-.aboutactions { display: flex; flex-wrap: wrap; gap: 0.8vh 0.6vw; justify-content: flex-end; }
-.aboutupdate { display: flex; align-items: center; gap: 1.2vw; margin-bottom: 1.6vh; padding: 1.2vh 1vw; border-radius: 1vh; background-color: rgba(255,255,255,0.06); }
+.aboutupdate { display: flex; align-items: center; gap: 1.2vw; margin-bottom: 1.6vh; padding: 1.2vh 1vw; border-radius: calc(1vh * var(--round, 1)); background-color: rgba(255,255,255,0.06); }
 .aboutupdatetext { flex: 1; min-width: 0; font-size: 1.9vh; }
 .aboutrows { max-width: 60vw; }
 .aboutrow { display: flex; align-items: baseline; justify-content: space-between; gap: 1vw; padding: 0.55vh 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 1.8vh; }
@@ -537,10 +562,12 @@ z-index:9999;
 	color: rgb(255,255,255);
 	background: none;
 	border: none;
-	border-radius: 0.8vh;
+	border-radius: calc(0.8vh * var(--round, 1));
 }
 #infobtn svg { display: block; width: 100%; height: 100%; fill: currentColor; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
 #infobtn:hover { background-color: rgba(var(--accent), 0.5); }
+/* the Apps button's dots: the same shadow as the info button, clock and weather, so it reads on a bright wallpaper */
+#appbar > label .appicon { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
 #realappbarbtu:checked ~ #infobtn { display: none; }
 
 #infocard {
@@ -555,7 +582,7 @@ z-index:9999;
 	color: rgb(255,255,255);
 	background-color: rgba(18,18,24,0.94);
 	border: 2px solid rgba(var(--accent), 0.85);
-	border-radius: 1.6vh;
+	border-radius: calc(1.6vh * var(--round, 1));
 }
 #maindiv.infoopen #infocard { display: block; }
 #realappbarbtu:checked ~ #infocard { display: none; }
@@ -565,7 +592,7 @@ z-index:9999;
 	color: rgb(255,255,255);
 	background-color: rgba(255,255,255,0.1);
 	border: 1px solid rgba(255,255,255,0.4);
-	border-radius: 0.8vh;
+	border-radius: calc(0.8vh * var(--round, 1));
 }
 #infoclose { width: 4.2vh; height: 4.2vh; padding: 0.7vh; }
 #settingsclose svg, #infoclose svg { display: block; width: 100%; height: 100%; fill: currentColor; }
@@ -579,7 +606,7 @@ z-index:9999;
 	min-width: 0;
 	height: 1vh;
 	margin: 0;
-	border-radius: 0.5vh;
+	border-radius: calc(0.5vh * var(--round, 1));
 	outline: none;
 	-webkit-appearance: none;
 	background: linear-gradient(to right, rgb(var(--accent)) var(--seek), rgba(255,255,255,0.3) var(--seek));
@@ -609,7 +636,7 @@ z-index:9999;
 	color: rgb(255,255,255);
 	background-color: rgba(255,255,255,0.08);
 	border: 1px solid rgba(255,255,255,0.4);
-	border-radius: 0.8vh;
+	border-radius: calc(0.8vh * var(--round, 1));
 	padding: 1vh 1vw;
 	box-sizing: border-box;
 }
@@ -632,7 +659,7 @@ z-index:9999;
 	align-items: end;
 }
 #maindiv.has-recent #recentrow { display: grid; }
-#realappbarbtu:checked ~ #recentrow { display: none !important; }
+#maindiv:not(.recentabove) #realappbarbtu:checked ~ #recentrow { display: none !important; }
 /* the first row of the grid, starting where the first tile does (10px is the tile's own padding, so the text lines up with the icon) */
 #recentlabel {
 	grid-column: 1 / -1;
@@ -672,26 +699,26 @@ z-index:9999;
 #weatherdetail { font-size: 1.8vh; opacity: 0.9; white-space: nowrap; }
 
 /* the list of the user's own wallpapers (Wallpaper tab) */
-.listrow { display: flex; align-items: center; gap: 1vw; width: 100%; padding: 0.6vh 0.6vw; box-sizing: border-box; background-color: rgba(255,255,255,0.06); border-radius: 0.8vh; }
+.listrow { display: flex; align-items: center; gap: 1vw; width: 100%; padding: 0.6vh 0.6vw; box-sizing: border-box; background-color: rgba(255,255,255,0.06); border-radius: calc(0.8vh * var(--round, 1)); }
 .listkind { flex: 0 0 5vw; font-size: 1.6vh; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.7; }
 .listname { flex: 1; min-width: 0; font-size: 2vh; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .listremove { flex: 0 0 auto; width: 4.4vh; height: 4.4vh; padding: 0.7vh; }
 .listremove svg { display: block; width: 100%; height: 100%; fill: currentColor; }
 
 /* folders in the app drawer */
-.foldericon { position: relative; width: 100%; height: 0; padding-top: 100%; background-color: rgba(255,255,255,0.14); border-radius: 1vh; }
+.foldericon { position: relative; width: 100%; height: 0; padding-top: 100%; background-color: rgba(255,255,255,0.14); border-radius: calc(1vh * var(--round, 1)); }
 .foldericon svg { position: absolute; top: 14%; left: 14%; width: 72%; height: 72%; fill: rgb(255,255,255); opacity: 0.85; }
 /* a folder tile shows a 2x2 peek at its apps */
 .foldermini { position: absolute; top: 9%; left: 9%; right: 9%; bottom: 9%; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6%; }
 .foldermini img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 14%; background-color: rgba(255,255,255,0.75); }
 .folderempty { grid-column: 1 / -1; margin: 2vh 0; font-size: 2.2vh; text-align: center; color: rgba(255,255,255,0.75); }
 /* the bar above the drawer: All apps and one chip per folder */
-#folderbar { display: none; position: absolute; top: 1vh; left: 1vw; width: calc(100vw - 2vw); height: 7vh; box-sizing: border-box; z-index: 9999; align-items: center; gap: 0.8vw; padding: 0 2vw; overflow-x: auto; scrollbar-width: none; background-color: rgba(0, 0, 0, var(--menuopacity, 0.5)); }
+#folderbar { display: none; position: absolute; top: var(--menugap); left: var(--menuleft, var(--menugap)); width: var(--menuw, calc(100vw - 2 * var(--menugap))); height: var(--menubarh, 7vh); box-sizing: border-box; z-index: 9999; align-items: flex-end; gap: 0.8vw; padding: 0 calc(var(--menupad, 2vw) + var(--menuinset, 0px)); overflow-x: auto; scrollbar-width: none; background-color: rgba(0, 0, 0, var(--menuopacity, 0.5)); }
 #folderbar::-webkit-scrollbar { display: none; }
 #maindiv.hasfolders #folderbar { display: flex; }
 #realappbarbtu:not(:checked) ~ #folderbar { display: none !important; }
-#maindiv.hasfolders #appluncher { top: 8vh; height: calc(100vh - var(--barh) - 7vh); }
-.chip { display: flex; align-items: center; flex: 0 0 auto; gap: 0.6vw; padding: 0.8vh 1.3vw; font-family: inherit; font-size: 2.1vh; white-space: nowrap; color: rgb(255,255,255); background-color: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.35); border-radius: 99px; }
+
+.chip { display: flex; align-items: center; flex: 0 0 auto; gap: 0.6vw; padding: 0.8vh 1.3vw; font-family: inherit; font-size: 2.1vh; white-space: nowrap; color: rgb(255,255,255); background-color: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.35); border-radius: calc(99px * var(--round, 1)); }
 .chip:hover { background-color: rgba(var(--accent), 0.45); }
 .chip.on, .chip.on:hover { color: rgb(0,0,0); background-color: rgb(var(--accent)); border-color: rgb(var(--accent)); }
 .chipicon { display: block; width: 2.6vh; height: 2.6vh; }
@@ -716,17 +743,17 @@ z-index:9999;
 	color: rgb(255,255,255);
 	background-color: rgba(18,18,24,0.97);
 	border: 2px solid rgba(var(--accent), 0.85);
-	border-radius: 1.6vh;
+	border-radius: calc(1.6vh * var(--round, 1));
 	scrollbar-width: none;
 }
 #maindiv.pickeropen #folderbackdrop { display: block; }
 #maindiv.pickeropen #folderpicker { display: block; }
 #folderhead { display: flex; align-items: center; gap: 1.2vw; margin-bottom: 2vh; }
-#folderappicon { flex: 0 0 auto; width: 6.4vh; height: 6.4vh; object-fit: cover; border-radius: 1vh; background-color: rgba(255,255,255,0.75); }
+#folderappicon { flex: 0 0 auto; width: 6.4vh; height: 6.4vh; object-fit: cover; border-radius: calc(1vh * var(--round, 1)); background-color: rgba(255,255,255,0.75); }
 #folderheadtext { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 #folderapp { font-size: 2.8vh; overflow-wrap: anywhere; }
 #foldercurrent { margin-top: 0.3vh; font-size: 1.8vh; opacity: 0.7; }
-#folderclose { width: 4.4vh; height: 4.4vh; padding: 0.7vh; font-family: inherit; color: rgb(255,255,255); background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); border-radius: 0.8vh; }
+#folderclose { width: 4.4vh; height: 4.4vh; padding: 0.7vh; font-family: inherit; color: rgb(255,255,255); background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); border-radius: calc(0.8vh * var(--round, 1)); }
 #folderclose svg { display: block; width: 100%; height: 100%; fill: currentColor; }
 #folderclose:hover { background-color: rgba(var(--accent), 0.45); }
 /* the Rename window: same look as the folder window */
@@ -743,15 +770,15 @@ z-index:9999;
 	color: rgb(255,255,255);
 	background-color: rgba(18,18,24,0.97);
 	border: 2px solid rgba(var(--accent), 0.85);
-	border-radius: 1.6vh;
+	border-radius: calc(1.6vh * var(--round, 1));
 }
 #maindiv.renameopen #renamebackdrop, #maindiv.renameopen #renamebox { display: block; }
 #renamehead { display: flex; align-items: center; gap: 1.2vw; margin-bottom: 2vh; }
-#renameappicon { flex: 0 0 auto; width: 6.4vh; height: 6.4vh; object-fit: cover; border-radius: 1vh; background-color: rgba(255,255,255,0.75); }
+#renameappicon { flex: 0 0 auto; width: 6.4vh; height: 6.4vh; object-fit: cover; border-radius: calc(1vh * var(--round, 1)); background-color: rgba(255,255,255,0.75); }
 #renameheadtext { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 #renametitle { font-size: 2.8vh; overflow-wrap: anywhere; }
 #renameoriginal { margin-top: 0.3vh; font-size: 1.8vh; opacity: 0.7; }
-#renameclose { width: 4.4vh; height: 4.4vh; padding: 0.7vh; font-family: inherit; color: rgb(255,255,255); background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); border-radius: 0.8vh; }
+#renameclose { width: 4.4vh; height: 4.4vh; padding: 0.7vh; font-family: inherit; color: rgb(255,255,255); background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); border-radius: calc(0.8vh * var(--round, 1)); }
 #renameclose svg { display: block; width: 100%; height: 100%; fill: currentColor; }
 #renameclose:hover { background-color: rgba(var(--accent), 0.45); }
 #renameinput { width: 100%; box-sizing: border-box; }
@@ -762,7 +789,7 @@ z-index:9999;
 /* one card per place the app can go */
 #folderlist { display: grid; grid-template-columns: 1fr 1fr; gap: 1vh 0.8vw; }
 .foldercard { display: flex; align-items: center; gap: 0.8vw; min-width: 0; padding: 1vh 1vw; text-align: left; font-size: 2.1vh; overflow-wrap: anywhere; }
-.cardpicture { display: block; order: -1; flex: 0 0 auto; position: relative; width: 6vh; height: 6vh; border-radius: 1vh; background-color: rgba(255,255,255,0.14); }
+.cardpicture { display: block; order: -1; flex: 0 0 auto; position: relative; width: 6vh; height: 6vh; border-radius: calc(1vh * var(--round, 1)); background-color: rgba(255,255,255,0.14); }
 .cardpicture > svg { position: absolute; top: 15%; left: 15%; width: 70%; height: 70%; fill: currentColor; }
 .foldercard.on .cardpicture { background-color: rgba(0,0,0,0.2); }
 .cardnote { order: 1; margin-left: auto; flex: 0 0 auto; font-size: 1.6vh; opacity: 0.7; white-space: nowrap; }
@@ -772,7 +799,7 @@ z-index:9999;
 #foldermake { display: flex; align-items: center; flex-wrap: wrap; gap: 0.8vh 1vw; margin-top: 2.2vh; }
 #foldermakelabel { font-size: 1.7vh; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
 #foldersuggest { display: flex; flex-wrap: wrap; gap: 0.8vh 0.6vw; }
-#movetoast { position: fixed; bottom: 14vh; left: 50%; max-width: 70vw; z-index: 30000; padding: 1.4vh 2vw; font-size: 2.2vh; text-align: center; color: rgb(255,255,255); background-color: rgba(18,18,24,0.97); border: 2px solid rgba(var(--accent), 0.85); border-radius: 1.6vh; opacity: 0; transform: translate(-50%, 1.5vh); pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; }
+#movetoast { position: fixed; bottom: 14vh; left: 50%; max-width: 70vw; z-index: 30000; padding: 1.4vh 2vw; font-size: 2.2vh; text-align: center; color: rgb(255,255,255); background-color: rgba(18,18,24,0.97); border: 2px solid rgba(var(--accent), 0.85); border-radius: calc(1.6vh * var(--round, 1)); opacity: 0; transform: translate(-50%, 1.5vh); pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; }
 #movetoast.on { opacity: 1; transform: translate(-50%, 0); }
 #foldernew { display: none; gap: 0.8vw; margin-top: 1.4vh; }
 #maindiv.naming #foldernew { display: flex; }
@@ -797,17 +824,24 @@ z-index:9999;
 	color: rgb(255,255,255);
 	background-color: rgba(18,18,24,0.97);
 	border: 2px solid rgba(var(--accent), 0.85);
-	border-radius: 1.6vh;
+	border-radius: calc(1.6vh * var(--round, 1));
 }
 #maindiv.menuopen #appmenubackdrop { display: block; }
 #maindiv.menuopen #appmenu { display: block; }
-#appmenutitle { font-size: 2.6vh; margin-bottom: 1.6vh; overflow-wrap: anywhere; }
+#appmenuhead { display: flex; align-items: flex-start; gap: 1vw; margin-bottom: 1.6vh; }
+#appmenuheadtext { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#appmenutitle { font-size: 2.6vh; overflow-wrap: anywhere; }
+#appmenusub { margin-top: 0.3vh; font-size: 1.8vh; opacity: 0.7; }
+#appmenusub:empty { display: none; }
+#appmenuclose { flex: 0 0 auto; width: 4.4vh; height: 4.4vh; padding: 0.7vh; font-family: inherit; color: rgb(255,255,255); background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); border-radius: calc(0.8vh * var(--round, 1)); }
+#appmenuclose svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+#appmenuclose:hover { background-color: rgba(var(--accent), 0.45); }
 #appmenulist { display: flex; flex-direction: column; gap: 0.8vh; }
 #appmenulist .sopt { text-align: left; }
 #appmenulist .sopt.danger { margin-top: 1.2vh; }
 /* Running apps (running.js), in the same window */
 .runningapp { display: flex; align-items: center; gap: 0.8vw; }
-.runningicon { flex: 0 0 auto; width: 4.4vh; height: 4.4vh; object-fit: cover; border-radius: 0.7vh; }
+.runningicon { flex: 0 0 auto; width: 4.4vh; height: 4.4vh; object-fit: cover; border-radius: calc(0.7vh * var(--round, 1)); }
 .runningname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .runningclose { flex: 0 0 auto; width: 2.4vh; height: 2.4vh; opacity: 0.6; }
 .runningclose svg { display: block; width: 100%; height: 100%; fill: currentColor; }
@@ -828,7 +862,7 @@ z-index:9999;
 	color: rgb(255,255,255);
 	background-color: rgba(18,18,24,0.97);
 	border: 2px solid rgba(var(--accent), 0.85);
-	border-radius: 1.6vh;
+	border-radius: calc(1.6vh * var(--round, 1));
 	flex-direction: column;
 }
 #maindiv.filesopen #filesbackdrop { display: block; }
@@ -837,7 +871,7 @@ z-index:9999;
 #filesheadtext { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 #filestitle { font-size: 2.8vh; overflow-wrap: anywhere; }
 #filespath { margin-top: 0.3vh; font-size: 1.8vh; opacity: 0.7; overflow-wrap: anywhere; }
-#filesclose { width: 4.4vh; height: 4.4vh; padding: 0.7vh; font-family: inherit; color: rgb(255,255,255); background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); border-radius: 0.8vh; }
+#filesclose { width: 4.4vh; height: 4.4vh; padding: 0.7vh; font-family: inherit; color: rgb(255,255,255); background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); border-radius: calc(0.8vh * var(--round, 1)); }
 #filesclose svg { display: block; width: 100%; height: 100%; fill: currentColor; }
 #filesclose:hover { background-color: rgba(var(--accent), 0.45); }
 #filesplaces, #filesactions { display: flex; flex-wrap: wrap; gap: 0.8vh 0.6vw; margin-bottom: 1.2vh; }
@@ -845,7 +879,7 @@ z-index:9999;
 #fileslist { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; display: grid; grid-template-columns: 1fr 1fr 1fr; grid-auto-rows: min-content; gap: 1vh 0.8vw; padding: 0.6vh; }
 .filecard { display: flex; align-items: center; gap: 0.8vw; min-width: 0; padding: 0.8vh 0.8vw; text-align: left; font-size: 1.9vh; }
 .filename { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.filepicture { flex: 0 0 auto; display: block; position: relative; width: 6vh; height: 6vh; border-radius: 0.8vh; overflow: hidden; background-color: rgba(255,255,255,0.14); }
+.filepicture { flex: 0 0 auto; display: block; position: relative; width: 6vh; height: 6vh; border-radius: calc(0.8vh * var(--round, 1)); overflow: hidden; background-color: rgba(255,255,255,0.14); }
 .filepicture > svg { position: absolute; top: 18%; left: 18%; width: 64%; height: 64%; fill: currentColor; }
 .filepicture > img { display: block; width: 100%; height: 100%; object-fit: cover; }
 #filesmessage { margin-top: 1vh; min-height: 2vh; }
@@ -853,8 +887,25 @@ z-index:9999;
 /* Settings > Apps > Names and icons: one button per app, which opens its edit window (rename.js) */
 .appeditlist { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8vh 0.6vw; }
 .appeditbtn { display: flex; align-items: center; gap: 0.7vw; min-width: 0; padding: 0.7vh 0.7vw; text-align: left; font-size: 1.8vh; }
-.appediticon { flex: 0 0 auto; width: 4.4vh; height: 4.4vh; object-fit: cover; border-radius: 0.7vh; }
+.appediticon { flex: 0 0 auto; width: 4.4vh; height: 4.4vh; object-fit: cover; border-radius: calc(0.7vh * var(--round, 1)); }
 .appeditname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .appeditmark { flex: 0 0 auto; width: 2.2vh; height: 2.2vh; opacity: 0.7; }
 .appeditmark svg { display: block; width: 100%; height: 100%; fill: currentColor; }
 .appeditbtn.hiddenapp .appediticon { opacity: 0.45; }
+/* an HDMI input with nothing plugged in (inputs.js) */
+.appitem.unplugged .appicon { opacity: 0.4; filter: grayscale(1); }
+.appitem.unplugged .appname { opacity: 0.55; }
+/* Settings > Wallpaper > My wallpapers > Online photos */
+.albumtabs { gap: 0.6vh 0.5vw; }
+.albumnote { font-size: 1.8vh; opacity: 0.75; }
+.picturepick.inalbum { opacity: 0.8; }
+.albumcredit { font-size: 1.6vh; opacity: 0.6; }
+.scontrol > .albumcredit { flex: 1 1 100%; }
+/* the folder chips and the apps are one panel: rounded at its outer corners only */
+#folderbar { border-radius: calc(1.2vh * var(--round, 1)) calc(1.2vh * var(--round, 1)) 0 0; }
+#maindiv.hasfolders #appluncher { border-top-left-radius: 0; border-top-right-radius: 0; }
+/* No scrollbars anywhere: everything scrolls with the remote or the pointer, and a scrollbar only takes room and looks out of
+   place. scrollbar-width (used above) needs Chromium 121+; webOS's browsers are older and need this. */
+::-webkit-scrollbar { display: none; width: 0; height: 0; }
+/* all the apps fit in the app menu (layoutmenu in main.js): nothing to scroll */
+#maindiv.menufits #appluncher { overflow-y: hidden; }

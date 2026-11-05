@@ -34,7 +34,7 @@ const SETTINGS_SCHEMA=[
 	{id:"clock",title:"Clock",icon:"clock",items:[
 		{key:"clockStyle",label:"Style",type:"choice",stepper:true,default:"digital",options:[["digital","Digital"],["stacked","Stacked"],["analog","Analog"],["analogmin","Analog minimal"],["off","Off"]]},
 		{key:"clockSeconds",label:"Seconds",type:"choice",default:true,options:ON_OFF,show:(p) => p.clockStyle!=="off"},
-		{key:"clockHour12",label:"Hours",type:"choice",default:false,options:[[false,"24-hour"],[true,"12-hour"]],show:(p) => p.clockStyle==="digital" || p.clockStyle==="stacked"},
+		{key:"clockHour12",label:"Hours",type:"choice",default:"tv",options:[["tv","Same as TV"],[false,"24-hour"],[true,"12-hour"]],show:(p) => p.clockStyle==="digital" || p.clockStyle==="stacked"},
 		{key:"clockPos",label:"Position",type:"position",default:"center-center"}
 	]},
 	{id:"date",title:"Date",icon:"calendar",items:[
@@ -61,6 +61,8 @@ const SETTINGS_SCHEMA=[
 		{key:"barNameSize",compact:true,label:"Name size",type:"choice",default:1.5,options:SIZE_OPTIONS(1.2,1.5,1.9,2.3),show:(p) => p.barNames},
 		{type:"heading",label:"App menu"},
 		{key:"menuSize",compact:true,label:"Size",type:"choice",default:5,options:SIZE_OPTIONS(4,5,6,7.5)},
+		{key:"menuRowGap",label:"Row spacing",type:"choice",default:0,options:[[0,"Even"],[0.25,"Wider"],[0.5,"Widest"]],
+			hint:"The space between rows of apps. Even matches the space between columns; Widest is how it used to be."},
 		{key:"menuOpacity",label:"Background",type:"slider",default:50,min:0,max:100,step:5,unit:"%",hint:"How dark the app menu's background is. 0% shows the wallpaper through it, 100% hides it."},
 		{key:"showSystemApps",label:"System apps",type:"choice",default:false,options:ON_OFF,hint:"The TV marks its inputs, services and helper apps as not meant for an app list, so they are left out. Turn this on to list every app anyway."},
 		{key:"hidePinned",label:"Hide pinned apps",type:"choice",default:false,options:ON_OFF,hint:"Leave the apps that are on the bottom bar out of the app menu, so each app shows once. Edit mode still lists them, so you can move or unpin them."},
@@ -68,13 +70,18 @@ const SETTINGS_SCHEMA=[
 		{key:"menuNameSize",compact:true,label:"Name size",type:"choice",default:1.5,options:SIZE_OPTIONS(1.2,1.5,1.9,2.3),show:(p) => p.menuNames},
 		{label:"Folders",type:"custom",wide:true,render:(box) => renderfolderlist(box),
 			hint:"Group apps in the app menu. In Edit mode, an app's folder button puts it in a folder."},
+		{key:"inputStatus",label:"Input status",type:"choice",default:true,options:ON_OFF,
+			hint:"Dims HDMI inputs with nothing plugged in, and shows the name of a connected device (like PlayStation 5) on its input, unless you renamed it."},
 		{type:"heading",label:"Recent apps"},
 		{key:"recentShow",label:"Show",type:"choice",default:false,options:ON_OFF,hint:"A row of the apps you launched last, above the bottom bar"},
 		{key:"recentCount",label:"How many",type:"choice",default:5,options:[[3,"3"],[5,"5"],[7,"7"],[9,"9"]],show:(p) => p.recentShow},
-		{type:"heading",label:"Colour"},
+		{type:"heading",label:"Look"},
 		{key:"accent",label:"Hover colour",type:"swatch",default:"80,220,230",options:[
 			["255,150,255","Pink"],["255,90,90","Red"],["255,160,60","Orange"],["255,215,80","Yellow"],["110,220,120","Green"],
 			["80,220,230","Cyan"],["90,170,255","Blue"],["170,120,255","Purple"],["255,255,255","White"]]},
+		{key:"corners",label:"Corners",type:"choice",default:"round",options:[["sharp","Sharp"],["round","Rounded"],["extra","Extra round"]],
+			hint:"The corners of the app menu, windows, buttons and Settings."},
+		{key:"iconCorners",label:"App icon corners",type:"choice",default:"square",options:[["square","Square"],["round","Rounded"],["circle","Circle"]]},
 		{type:"heading",label:"Names and icons"},
 		{label:"Names and icons",type:"custom",wide:true,nolabel:true,render:(box) => renderappeditlist(box)}
 	]},
@@ -125,6 +132,10 @@ const SETTINGS_SCHEMA=[
 		{label:"Open",type:"custom",wide:true,show:(p) => rooted,
 			hint:"Opens OpenLauncher instead of Live TV when you switch the TV on with the power button. It starts working after one full restart of the TV. Casting, HDMI devices and timers still open what they ask for.",
 			render:(box) => renderpoweron(box)},
+		{type:"heading",label:"Web debugger",show:(p) => rooted},
+		{key:"debuggerOpen",label:"Reachable from",type:"choice",default:false,show:(p) => rooted,options:[[false,"This TV only"],[true,"Whole network"]],
+			hint:"Developer Mode opens a debugger on port 9998 that lets anyone on your network run code inside apps, including OpenLauncher, which can act as root. Keep it on This TV only unless you develop apps without an SSH tunnel."},
+		{label:"Debugger status",type:"custom",wide:true,nolabel:true,show:(p) => rooted,render:(box) => renderdebuggerstatus(box)},
 		{type:"heading",label:"Opening it without root",show:(p) => !rooted},
 		{label:"Without root",type:"custom",wide:true,nolabel:true,show:(p) => !rooted,render:(box) => rendernorootguide(box)}
 	]},
@@ -234,6 +245,8 @@ function resetprefs(){
 function applysizes(){
 	const root=document.documentElement.style;
 	root.setProperty("--accent",prefs.accent);
+	root.setProperty("--round",{sharp:"0",round:"1",extra:"1.8"}[prefs.corners] || "1");
+	root.setProperty("--iconround",{square:"0",round:"22%",circle:"50%"}[prefs.iconCorners] || "0");
 	root.setProperty("--bartile",prefs.barSize+"vw");
 	root.setProperty("--menutile",prefs.menuSize+"vw");
 	root.setProperty("--menuopacity",String(prefs.menuOpacity/100));
@@ -248,11 +261,9 @@ function applysizes(){
 	// the bar grows with its tiles
 	const barheight=Math.max(15,prefs.barSize*aspect*1.05+namesvh(prefs.barNames,prefs.barNameSize));
 	root.setProperty("--barh",(Math.round(barheight*10)/10)+"vh");
-	// the app menu's grid rows are normally 2x a tile's width tall; bigger names need more, no names need less
-	const rowfor=(tile,names,size) => names?Math.max(2,Math.round((1+namesvh(true,size)/aspect/tile+0.43)*100)/100):1.5;
 	// the recent-apps row is a row of bar-sized tiles sitting above the bar
 	root.setProperty("--recenth",(Math.round((prefs.barSize*aspect*1.05+namesvh(prefs.barNames,prefs.barNameSize))*10)/10)+"vh");
-	root.setProperty("--menurow",String(rowfor(prefs.menuSize,prefs.menuNames,prefs.menuNameSize)));
+	if(typeof layoutmenu==="function" && typeof applist!=="undefined" && applist){ layoutmenu(); }
 }
 
 // make the launcher match `prefs`
@@ -266,6 +277,8 @@ function applyprefs(){
 	renderrecent();
 	applyscreen();
 	applyweather();
+	if(typeof applydebugger==="function"){ applydebugger(); }
+	if(typeof refreshinputs==="function" && prefs.inputStatus && Object.keys(inputstatus).length===0){ refreshinputs(); }
 }
 
 // ---- panel
@@ -556,6 +569,7 @@ function closesettings(){
 
 function initsettings(){
 	loadprefs();
+	readtvclock();
 	startclock();
 	applyprefs();
 	settingsbtn.addEventListener("click",opensettings);
