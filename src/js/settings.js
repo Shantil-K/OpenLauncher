@@ -61,28 +61,32 @@ const SETTINGS_SCHEMA=[
 		{key:"barNameSize",compact:true,label:"Name size",type:"choice",default:1.5,options:SIZE_OPTIONS(1.2,1.5,1.9,2.3),show:(p) => p.barNames},
 		{type:"heading",label:"App menu"},
 		{key:"menuSize",compact:true,label:"Size",type:"choice",default:5,options:SIZE_OPTIONS(4,5,6,7.5)},
-		{key:"menuRowGap",label:"Row spacing",type:"choice",default:0,options:[[0,"Even"],[0.25,"Wider"],[0.5,"Widest"]],
-			hint:"The space between rows of apps. Even matches the space between columns; Widest is how it used to be."},
-		{key:"menuOpacity",label:"Background",type:"slider",default:50,min:0,max:100,step:5,unit:"%",hint:"How dark the app menu's background is. 0% shows the wallpaper through it, 100% hides it."},
-		{key:"showSystemApps",label:"System apps",type:"choice",default:false,options:ON_OFF,hint:"The TV marks its inputs, services and helper apps as not meant for an app list, so they are left out. Turn this on to list every app anyway."},
-		{key:"hidePinned",label:"Hide pinned apps",type:"choice",default:false,options:ON_OFF,hint:"Leave the apps that are on the bottom bar out of the app menu, so each app shows once. Edit mode still lists them, so you can move or unpin them."},
 		{key:"menuNames",label:"Names",type:"choice",default:true,options:ON_OFF},
 		{key:"menuNameSize",compact:true,label:"Name size",type:"choice",default:1.5,options:SIZE_OPTIONS(1.2,1.5,1.9,2.3),show:(p) => p.menuNames},
-		{label:"Folders",type:"custom",wide:true,render:(box) => renderfolderlist(box),
-			hint:"Group apps in the app menu. In Edit mode, an app's folder button puts it in a folder."},
+		{key:"showSystemApps",label:"System apps",type:"choice",default:false,options:ON_OFF,hint:"The TV marks its inputs, services and helper apps as not meant for an app list, so they are left out. Turn this on to list every app anyway."},
+		{key:"hidePinned",label:"Hide pinned",type:"choice",default:false,options:ON_OFF,hint:"Leave the apps that are on the bottom bar out of the app menu, so each app shows once. Edit mode still lists them, so you can move or unpin them."},
 		{key:"inputStatus",label:"Input status",type:"choice",default:true,options:ON_OFF,
 			hint:"Dims HDMI inputs with nothing plugged in, and shows the name of a connected device (like PlayStation 5) on its input, unless you renamed it."},
 		{type:"heading",label:"Recent apps"},
 		{key:"recentShow",label:"Show",type:"choice",default:false,options:ON_OFF,hint:"A row of the apps you launched last, above the bottom bar"},
-		{key:"recentCount",label:"How many",type:"choice",default:5,options:[[3,"3"],[5,"5"],[7,"7"],[9,"9"]],show:(p) => p.recentShow},
-		{type:"heading",label:"Look"},
+		{key:"recentCount",label:"How many",type:"choice",default:5,options:[[3,"3"],[5,"5"],[7,"7"],[9,"9"]],show:(p) => p.recentShow}
+	]},
+	{id:"look",title:"Look",icon:"palette",items:[
 		{key:"accent",label:"Hover colour",type:"swatch",default:"80,220,230",options:[
 			["255,150,255","Pink"],["255,90,90","Red"],["255,160,60","Orange"],["255,215,80","Yellow"],["110,220,120","Green"],
 			["80,220,230","Cyan"],["90,170,255","Blue"],["170,120,255","Purple"],["255,255,255","White"]]},
 		{key:"corners",label:"Corners",type:"choice",default:"round",options:[["sharp","Sharp"],["round","Rounded"],["extra","Extra round"]],
 			hint:"The corners of the app menu, windows, buttons and Settings."},
-		{key:"iconCorners",label:"App icon corners",type:"choice",default:"square",options:[["square","Square"],["round","Rounded"],["circle","Circle"]]},
-		{type:"heading",label:"Names and icons"},
+		{key:"iconCorners",label:"Icon corners",type:"choice",default:"square",options:[["square","Square"],["round","Rounded"],["circle","Circle"]]},
+		{key:"menuRowGap",label:"Row spacing",type:"choice",default:0,options:[[0,"Even"],[0.25,"Wider"],[0.5,"Widest"]],
+			hint:"The space between rows of apps in the app menu. Even matches the space between columns; Widest is how it used to be."},
+		{key:"menuOpacity",label:"Menu background",type:"slider",default:50,min:0,max:100,step:5,unit:"%",hint:"How dark the app menu's background is. 0% shows the wallpaper through it, 100% hides it."}
+	]},
+	{id:"folders",title:"Folders",icon:"folder",items:[
+		{label:"Folders",type:"custom",wide:true,nolabel:true,render:(box) => renderfolderlist(box),
+			hint:"Group apps in the app menu. In Edit mode, an app's folder button puts it in a folder."}
+	]},
+	{id:"names",title:"Names & icons",icon:"pencil",items:[
 		{label:"Names and icons",type:"custom",wide:true,nolabel:true,render:(box) => renderappeditlist(box)}
 	]},
 	{id:"wallpaper",title:"Wallpaper",icon:"wallpaper",items:[
@@ -97,52 +101,55 @@ const SETTINGS_SCHEMA=[
 			valid:(v) => Array.isArray(v) && v.length<=CUSTOM_MAX && v.every(validcustomurl),
 			render:(box) => renderwallpaperlist(box)},
 		{key:"customSeconds",label:"Change every",type:"choice",default:20,options:[[10,"10 s"],[20,"20 s"],[30,"30 s"],[60,"1 min"],[300,"5 min"]],
-			show:(p) => p.videoSource==="custom" && wallpaperstaketurns(p),hint:"How long each picture stays before the next one. Videos play to their end."}
+			show:(p) => p.videoSource==="custom" && wallpaperstaketurns(p),hint:"How long each picture stays before the next one. Videos play to their end."},
+		{key:"wallBrightness",label:"Brightness",type:"slider",default:100,min:40,max:100,step:5,unit:"%",
+			hint:"Darkens the wallpaper all the time, so a bright picture or video is easier on the eyes and the clock and apps stand out"}
 	]},
 	{id:"screen",title:"Screen",icon:"monitor",items:[
+		{type:"heading",label:"OLED care"},
 		{key:"pixelShift",label:"Pixel shift",type:"choice",default:0,options:[[0,"Off"],[1,"Small"],[2,"Large"]],
-			hint:"Nudges the clock, bar and buttons a few pixels every minute so an OLED screen doesn't keep the same pixels lit"},
-		{key:"idleAfter",label:"When idle after",type:"choice",default:0,options:[[0,"Never"],[1,"1 min"],[2,"2 min"],[5,"5 min"],[10,"10 min"]],
-			hint:"No pointer or button input for this long"},
-		{key:"idleAction",label:"Then",type:"choice",default:"dim",options:[["dim","Dim all"],["hidebar","Hide bar"]],hint:"Dim all dims everything. Hide bar also hides the bottom bar and dims the rest.",show:(p) => p.idleAfter>0},
+			hint:"Nudges the clock, bar and buttons a few pixels now and then so an OLED screen doesn't keep the same pixels lit"},
+		{key:"shiftEvery",label:"Shift every",type:"choice",default:1,options:[[1,"1 min"],[3,"3 min"],[5,"5 min"]],show:(p) => p.pixelShift>0},
+		{type:"heading",label:"When idle"},
+		{key:"idleAfter",label:"Idle after",type:"choice",stepper:true,default:0,options:[[0,"Never"],[1,"1 min"],[2,"2 min"],[5,"5 min"],[10,"10 min"],[15,"15 min"],[30,"30 min"]],
+			hint:"No pointer or button input for this long, while the home screen is showing"},
+		{key:"idleAction",label:"Then",type:"choice",stepper:true,default:"dim",options:[["dim","Dim all"],["hidebar","Hide bar"],["clockonly","Clock only"]],show:(p) => p.idleAfter>0,
+			hint:"Dim all dims everything. Hide bar also hides the bottom bar and the Recent row. Clock only leaves just the clock (and the date)."},
 		{key:"idleDim",label:"Dim level",type:"slider",default:30,min:5,max:100,step:5,unit:"%",show:(p) => p.idleAfter>0,
-			hint:"How bright the clock, bar and buttons stay when idle. Lower is darker. The small screen beside shows it."}
+			hint:"How bright what stays on screen is when idle. Lower is darker. The small screen beside shows it."},
+		{key:"idleWallpaper",label:"Wallpaper",type:"choice",stepper:true,default:"keep",options:[["keep","Keep playing"],["dim","Dim it too"],["pause","Pause"]],show:(p) => p.idleAfter>0,
+			hint:"What the wallpaper does when idle. Pause stops a video wallpaper on its current picture, which also saves power."},
+		{key:"screenOffAfter",label:"Screen off",type:"choice",stepper:true,default:0,options:[[0,"Never"],[15,"15 min"],[30,"30 min"],[60,"1 hour"]],show:(p) => rooted,
+			hint:"Turns the TV's screen off (sound and apps keep running) when nobody has touched the remote for this long on the home screen. Any button turns it back on."}
 	]},
 	{id:"backup",title:"Backup",icon:"save",items:[
 		{label:"Settings backup",type:"custom",wide:true,hint:"Export your settings and app layout as JSON, or import a backup again.",render:(box,item) => renderbackup(box,item)}
 	]},
 	{id:"tv",title:"TV",icon:"tv",items:[
-		{type:"action",label:"TV settings",hint:"Opens the TV's own settings",button:"Open",icon:"open",run:() => launchapp("com.palm.app.settings")},
 		{type:"action",label:"Reset launcher",hint:"Put every setting on this screen back to its default",button:"Reset",icon:"reset",confirm:"Are you sure?",confirmButton:"Yes, reset",run:() => resetprefs()},
-		{type:"heading",label:"Replace stock Home",show:(p) => rooted},
-		{key:"homeReplaceMethod",label:"webOS version",type:"choice",stepper:true,default:"sixto24",show:(p) => rooted,
-			options:[["sixto24","6–24"],["twentyfive","25"],["defaultapp","25–26"],["copilot","25–26 (copilot)"]],
-			hint:"Auto-detected from a system file when you open this tab, so it's usually already right - but it can only tell 6-24 apart from 25+, not 25 from 25-26, so double check against Settings > App info > Firmware (or the TV's own Settings > Support > About this TV) if Apply doesn't do anything. Picking the wrong one just fails to do anything useful; it doesn't need to be undone before trying another."},
-		{type:"action",label:"Bind Home + auto-start",button:"Apply",icon:"open",show:(p) => rooted,
-			confirm:"This patches a system file (or sets the default Home app) for the version picked above, and restarts the system UI. Continue?",confirmButton:"Yes, apply",
-			run:() => applyhomereplace()},
-		{type:"action",label:"Restore stock Home",hint:"Undoes Bind Home + auto-start (any version). Do this before uninstalling OpenLauncher - uninstalling alone does not put stock Home back.",
-			button:"Restore",icon:"reset",show:(p) => rooted,
-			confirm:"This puts the TV's stock Home screen back and restarts the system UI. Continue?",confirmButton:"Yes, restore",
-			run:() => restorehome()},
-		{label:"Result",type:"custom",wide:true,nolabel:true,show:(p) => rooted,render:(box) => renderhomereplace(box)},
+		{type:"heading",label:"Home button",show:(p) => rooted},
+		{key:"homeReplaceMethod",label:"webOS version",type:"custom",default:"sixto24",show:(p) => rooted,
+			valid:(v) => typeof REPLACE_METHODS!=="undefined" && REPLACE_METHODS.hasOwnProperty(v),
+			hint:"Makes the remote's Home button open OpenLauncher. The version is picked from a system file when you open this tab; it can tell 6-24 from 25+, so check against App updates > TV if Apply doesn't work. Restore puts LG's Home back: do it before uninstalling OpenLauncher another way.",
+			render:(box,item) => renderhomecontrol(box,item)},
+		{label:"Home status",type:"custom",wide:true,nolabel:true,show:(p) => rooted,render:(box) => renderhomereplace(box)},
 		{label:"Replace stock Home",type:"custom",wide:true,nolabel:true,show:(p) => !rooted,
 			render:(box) => box.appendChild(el("div","sstatus","Needs root (Homebrew Channel). See the Readme's Replace section to do it manually over SSH instead."))},
 		{type:"heading",label:"When the TV turns on",show:(p) => rooted},
-		{label:"Open",type:"custom",wide:true,show:(p) => rooted,
-			hint:"Opens OpenLauncher instead of Live TV when you switch the TV on with the power button. It starts working after one full restart of the TV. Casting, HDMI devices and timers still open what they ask for.",
+		{label:"Open",type:"custom",show:(p) => rooted,
+			hint:"Opens OpenLauncher instead of Live TV when you switch the TV on with the power button. Needs the Home button applied above first. It starts working after one full restart of the TV. Casting, HDMI devices and timers still open what they ask for.",
 			render:(box) => renderpoweron(box)},
 		{type:"heading",label:"Web debugger",show:(p) => rooted},
-		{key:"debuggerOpen",label:"Reachable from",type:"choice",default:false,show:(p) => rooted,options:[[false,"This TV only"],[true,"Whole network"]],
+		{key:"debuggerOpen",label:"Access",type:"choice",default:false,show:(p) => rooted,options:[[false,"This TV only"],[true,"Whole network"]],
 			hint:"Developer Mode opens a debugger on port 9998 that lets anyone on your network run code inside apps, including OpenLauncher, which can act as root. Keep it on This TV only unless you develop apps without an SSH tunnel."},
 		{label:"Debugger status",type:"custom",wide:true,nolabel:true,show:(p) => rooted,render:(box) => renderdebuggerstatus(box)},
 		{type:"heading",label:"Opening it without root",show:(p) => !rooted},
 		{label:"Without root",type:"custom",wide:true,nolabel:true,show:(p) => !rooted,render:(box) => rendernorootguide(box)}
 	]},
-	{id:"about",title:"App info",icon:"info",items:[
-		{label:"App info",type:"custom",wide:true,nolabel:true,render:(box) => renderabout(box)},
+	{id:"about",title:"App updates",icon:"info",items:[
+		{label:"App updates",type:"custom",wide:true,nolabel:true,render:(box) => renderabout(box)},
 		{type:"heading",label:"Uninstall",show:(p) => turstedapp || rooted},
-		{type:"action",label:"Uninstall OpenLauncher",button:"Uninstall",icon:"trash",show:(p) => turstedapp || rooted,
+		{type:"action",label:"Uninstall",button:"Uninstall",icon:"trash",show:(p) => turstedapp || rooted,
 			confirm:"This uninstalls OpenLauncher (and first restores the stock Home screen, if it was replaced). Continue?",confirmButton:"Yes, uninstall",
 			run:() => selfuninstall()},
 		{label:"Uninstall result",type:"custom",wide:true,nolabel:true,show:(p) => turstedapp || rooted,render:(box) => renderuninstall(box)}
@@ -251,6 +258,7 @@ function applysizes(){
 	root.setProperty("--menutile",prefs.menuSize+"vw");
 	root.setProperty("--menuopacity",String(prefs.menuOpacity/100));
 	root.setProperty("--idledim",String(prefs.idleDim/100));
+	root.setProperty("--wallshade",String(1-prefs.wallBrightness/100));
 	root.setProperty("--barname",prefs.barNameSize+"vh");
 	root.setProperty("--menuname",prefs.menuNameSize+"vh");
 	// Sizes below are estimates in vh/vw of what a tile needs: a tile is about as tall as it is wide, plus its name
@@ -498,7 +506,7 @@ function renderpane(){
 			settingstab=s.id;
 			settingspane.scrollTop=0;
 			sethint("");
-			if(s.id==="tv"){ detecthomemethod(); loadpoweron(); }
+			if(s.id==="tv"){ detecthomemethod(); checkhomestate(); loadpoweron(); }
 			renderpane();
 		});
 		settingstabs.appendChild(tab);
@@ -555,7 +563,7 @@ function settingsisopen(){
 }
 
 function opensettings(){
-	if(settingstab==="tv"){ loadpoweron(); }
+	if(settingstab==="tv"){ checkhomestate(); loadpoweron(); }
 	renderpane();
 	maindiv.classList.add("settingsopen");
 }

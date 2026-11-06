@@ -2,5 +2,5 @@
   <!-- OpenLauncher simulator pointer: original artwork, drawn from plain geometry (a square with its top-left corner as the
        tip and the rest of it swept round as one circular arc). Part of OpenLauncher, GPLv3. -->
   <defs><filter id="s" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="2.5" stdDeviation="2.5" flood-color="#000" flood-opacity="0.5"/></filter></defs>
-  <path filter="url(#s)" d="M6 6 H29 A23 23 0 1 1 6 29 Z" fill="#202634" fill-opacity="0.92" stroke="#ffffff" stroke-width="3.4" stroke-linejoin="round"/>
+  <path filter="url(#s)" d="M6 6 H29 A23 23 0 1 1 6 29 Z" fill="#202634" fill-opacity="0.55" stroke="#ffffff" stroke-width="3.4" stroke-linejoin="round"/>
 </svg>

@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: WTFNMFPL
-// Settings > App info: the essentials. Which version this is and updating it, the TV it runs on, what it is allowed to do,
+// Settings > App updates: the essentials. Which version this is and updating it, the TV it runs on, what it is allowed to do,
 // and where the project lives. The internet is only used when you press Check for updates.
 
-const APP_RELEASE="3.0.0";       // must equal "version" in appinfo.json and the release tag (vX.Y.Z); set both with scripts/set-version.sh
+const APP_RELEASE="3.1.0";       // must equal "version" in appinfo.json and the release tag (vX.Y.Z); set both with scripts/set-version.sh
 const GITHUB_REPO="Shantil-K/OpenLauncher";
 const GITHUB_API="https://api.github.com/repos/"+GITHUB_REPO+"/releases?per_page=1";   // per_page=1 of ALL releases: "latest" skips pre-releases
 const ABOUT_APP_ID="com.homebrew.openlauncher";
@@ -96,7 +96,14 @@ function renderabout(box) {
 	icon.setAttribute("alt","");
 	head.appendChild(icon);
 	const title=el("div","abouttitle");
-	title.appendChild(el("span","aboutname","OpenLauncher"));
+	const name=el("span","aboutname","OpenLauncher");
+	// signed and installed: this version came through the signed updater, which checked its signature on this TV first.
+	// Otherwise it was installed some other way (Homebrew Channel, Dev Manager...), and the app can't tell how it was checked.
+	const signed=typeof signedinstall==="function" && signedinstall();
+	const badge=el("span","aboutbadge"+(signed?" signed":""),signed?"Signed and installed":"Installed");
+	badge.setAttribute("title",signed?"Installed by the in-app updater after checking the release's signature":"Installed outside the in-app updater");
+	name.appendChild(badge);
+	title.appendChild(name);
 	title.appendChild(el("small","aboutsub","Version "+APP_RELEASE));
 	head.appendChild(title);
 	box.appendChild(head);

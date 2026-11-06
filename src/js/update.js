@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: WTFNMFPL
-// Settings > App info > "Install update" (needs root). The page can't replace itself: installing closes it partway
+// Settings > App updates > "Install update" (needs root). The page can't replace itself: installing closes it partway
 // through. So it hands the whole job to a small shell script that runs as root (Homebrew Channel's exec), detached
 // from this app: download the newest release's .ipk from GitHub, check it against the SHA-256 that GitHub publishes
 // for the file, install it with the TV's own installer, then start the launcher again. The script writes each step
@@ -190,10 +190,20 @@ function updatewelcome() {
 		tag=localStorage.getItem(UPDATE_FLAG_KEY);
 		localStorage.removeItem(UPDATE_FLAG_KEY);
 	} catch(e) {}
-	if(tag && tag==="v"+APP_RELEASE){ toasty("OpenLauncher updated to "+tag); }
+	if(tag && tag==="v"+APP_RELEASE){
+		toasty("OpenLauncher updated to "+tag);
+		// this version came through the signed updater: its signature was checked on this TV before it was installed
+		try { localStorage.setItem(SIGNED_INSTALL_KEY,APP_RELEASE); } catch(e) {}
+	}
 }
 
-// what the update is doing, in words (App info shows it)
+// the version that is running now was installed by the signed updater on this TV (App updates shows a badge)
+const SIGNED_INSTALL_KEY="openlauncher.signedinstall";
+function signedinstall() {
+	try { return localStorage.getItem(SIGNED_INSTALL_KEY)===APP_RELEASE; } catch(e) { return false; }
+}
+
+// what the update is doing, in words (App updates shows it)
 function updatetext() {
 	const tag=updatestate.tag || "";
 	const text={

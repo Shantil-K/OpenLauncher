@@ -178,7 +178,10 @@ function renderpoweron(box){
 	const status=poweron.status;
 	const controls=el("div","scontrol");
 	const on=!!(status && status.chosen);
-	const usable=!!(status && status.supported && !status.foreign) && !poweron.busy;
+	// starting into OpenLauncher only makes sense once Home opens it too (Home button, above): until then this waits,
+	// but a start-up that is already set can always be switched back
+	const needshome=!on && typeof homestate!=="undefined" && homestate.applied!==true;
+	const usable=!!(status && status.supported && !status.foreign) && !poweron.busy && !needshome;
 	const openlauncher=optionbutton("OpenLauncher",on,() => { if(!on){ enablepoweron(); } },"apps");
 	const tv=optionbutton("Live TV",!on,() => { if(on){ disablepoweron(); } },"tv");
 	[openlauncher,tv].forEach((btn) => {
@@ -186,8 +189,12 @@ function renderpoweron(box){
 		if(!usable){ btn.disabled=true; }
 		controls.appendChild(btn);
 	});
+	if(needshome){
+		// why it can't be used yet, in the space beside the buttons
+		controls.appendChild(el("span","sinlinenote","Turn on the Home button above first."));
+	}
 	box.appendChild(controls);
-	box.appendChild(el("div","sstatus",poweron.message || poweronsummary(status)));
+	if(!needshome || poweron.message){ box.appendChild(el("div","sstatus",poweron.message || poweronsummary(status))); }
 	// a change waits for a restart: offer one
 	const pending=status && status.supported && !status.foreign && status.loaded!==null && status.chosen!==status.loaded;
 	const unknown=status && status.chosen && status.loaded===null;

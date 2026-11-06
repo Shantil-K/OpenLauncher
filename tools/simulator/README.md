@@ -22,7 +22,11 @@ tools/simulator/run.sh                      # full screen; Alt+F4 quits
 WINDOW=1 tools/simulator/run.sh             # a 1920x1080 window
 HEADLESS=1 tools/simulator/run.sh           # no window, DevTools protocol on port 9333 (scripted recordings)
 tools/simulator/record.sh                   # opens it full screen and records until Ctrl+C, into ~/Videos
+tools/simulator/dev.sh                      # live: serves src/ as it is; save a file and the window follows
 ```
+
+`dev.sh` is for working on the launcher: it serves `src/` straight from the repository (with `serve.mjs`, on this
+computer only) and the page reloads when a file changes, or just swaps the stylesheet when only CSS changed.
 
 For a screen that isn't 16:9 (a tablet), open `sim/frame.html`: it shows the launcher in an exact 1920x1080 frame,
 scaled to fit.

@@ -6,7 +6,7 @@ const SETTINGS_KEY='openlauncher.settings';
 // used until the user pins/unpins something for the first time
 const DEFAULT_PINNED=["com.webos.app.livetv","com.webos.app.hdmi1","com.webos.app.hdmi2","com.webos.app.hdmi3","com.webos.app.hdmi4","com.webos.app.mediadiscovery","com.famobi.ctr","com.halfbrick.fruitninja","com.github.k4zmu2a.space-cadet-pinball"];
 // sysplaced / sysdismissed: see systemapps.js
-let settings={pinned:null,hidden:[],order:[],folders:[],appfolder:{},sysplaced:[],sysdismissed:[],names:{},icons:{}};    // names: app id -> the name you gave it; icons: app id -> the picture you gave it (a data: URL, see rename.js)
+let settings={pinned:null,hidden:[],order:[],folders:[],appfolder:{},sysplaced:[],sysdismissed:[],names:{},icons:{},hiddenfolders:[]};      // hiddenfolders: folder ids left out of the app menu (they stay in the folder bar)    // names: app id -> the name you gave it; icons: app id -> the picture you gave it (a data: URL, see rename.js)
 // hover-only reordering: rest on a tile's Move zone to pick the app up, hover other tiles to move it, rest on it to drop
 const PICKUP_MS=875;
 const DROP_MS=700;
@@ -106,7 +106,7 @@ function maketile (eachapp,inbar,recent) {
 
 		watchmarquee(appitem);
 		appitem.addEventListener("mouseenter", function(){
-			if(!carrying){ return; }
+			if(!carrying || carrying.folder){ return; }      // a folder being moved only moves among the folders
 			if(carrying.id===eachapp.id){
 				if(carrying.armed && carrying.inbar===inbar){ droptimer=setTimeout(stopcarry,DROP_MS); }
 			} else if(carrying.inbar===inbar){
@@ -307,7 +307,7 @@ function orderedapps(){
 	settings.order.forEach((id,i) => {rank[id]=i;});
 	const rankof=(app,i) => (app.id in rank)?rank[app.id]:settings.order.length+i;
 	const all=prefs.showSystemApps===true;
-	// the launcher's own tile isn't listed: its info is in Settings > App info. "Hide pinned apps" leaves out the ones on the
+	// the launcher's own tile isn't listed: its info is in Settings > App updates. "Hide pinned apps" leaves out the ones on the
 	// bottom bar, except while editing (then they are needed to move, rename or hide them)
 	// an app in a folder is always listed, so the ones the launcher put into Inputs, TV... show up (see systemapps.js)
 	return applist.map((app,i) => ({app,rank:rankof(app,i)})).sort((x,y) => x.rank-y.rank).map((x) => x.app).filter((app) => app.id!==appid && (all || isuserapp(app) || !!settings.appfolder[app.id]) && !(prefs.hidePinned===true && !editing && ispinned(app.id)));
@@ -328,6 +328,30 @@ function hiddenlast(){
 
 const CARRY_HINT_MENU="Hover other apps to move it there, or hover the bottom bar to pin it. Rest on it to drop.";
 const CARRY_HINT_BAR="Hover other apps in the bar to move it there. To take it off the bar, drop it and use its Unpin button. Rest on it to drop.";
+const CARRY_HINT_FOLDER="Hover other folders to move it there. Rest on it to drop.";
+
+// a folder in the app menu is picked up the same way as an app; it moves among the folders only (folders.js)
+function startfoldercarry(id){
+	carrying={id,inbar:false,folder:true,armed:false};
+	carryhint.textContent=CARRY_HINT_FOLDER;
+	maindiv.classList.add("carrying");
+	render();
+}
+
+// put the carried folder in the place of the folder being hovered
+function movecarriedfolder(targetid){
+	const ids=settings.folders.map((folder) => folder.id);
+	const from=ids.indexOf(carrying.id);
+	const to=ids.indexOf(targetid);
+	if(from===-1 || to===-1 || from===to){ return; }
+	const folders=settings.folders.slice();
+	const moved=folders.splice(from,1)[0];
+	folders.splice(to,0,moved);
+	settings.folders=folders;
+	carrying.armed=true;
+	savesettings();
+	render();
+}
 
 function startcarry(id,inbar){
 	carrying={id,inbar,armed:false};
@@ -376,7 +400,7 @@ function pincarried(beforeid){
 
 // the pointer entered the bottom bar (even its empty part) with an app from the menu: pin it at the end
 function barhovered(){
-	if(carrying && !carrying.inbar){ pincarried(null); }
+	if(carrying && !carrying.inbar && !carrying.folder){ pincarried(null); }
 }
 
 // the Unpin button of a bottom bar tile (and "Unpin from the bar" in its OK menu)
@@ -402,6 +426,7 @@ function loadsettings(){
 			}
 			settings.icons=cleanicons(saved.icons);
 			settings.sysplaced=Array.isArray(saved.sysplaced)?saved.sysplaced.filter((id) => typeof id==="string"):[];
+			settings.hiddenfolders=Array.isArray(saved.hiddenfolders)?saved.hiddenfolders.filter((id) => typeof id==="string"):[];
 			settings.sysdismissed=Array.isArray(saved.sysdismissed)?saved.sysdismissed.filter((id) => typeof id==="string"):[];
 			settings.folders=Array.isArray(saved.folders)?saved.folders.filter((f) => f && typeof f.id==="string" && typeof f.name==="string"):[];
 			const known=settings.folders.map((f) => f.id);
@@ -458,6 +483,19 @@ function toggleedit(){
 }
 
 // closing the app menu ends Edit mode too (as if Done had been pressed)
+// A click on the empty space around the open app menu closes it, as Back does. The panel itself, the folder bar, the tiles
+// of the bottom bar and the Recent row, the buttons beside Edit and any window over the menu are not "empty space".
+const MENU_KEEP="#appluncher, #folderbar, #appbar .appitem, #recentrow .appitem, #drawertools button, #appmenu, #appmenubackdrop, #folderpicker, "+
+	"#folderbackdrop, #renamebox, #renamebackdrop, #settingspanel, #settingsbackdrop, #filesbox, #filesbackdrop, #infocard, #movetoast";
+
+function menuoutsideclick(event){
+	if(!realappbarbtu.checked || carrying){ return; }
+	const target=event.target;
+	if(!target || !target.closest || target.closest(MENU_KEEP)){ return; }
+	if(appmenuopen() || settingsisopen() || renameopen() || folderpickeropen() || filesopen()){ return; }
+	realappbarbtu.click();
+}
+
 function drawerchanged(){
 	if(!realappbarbtu.checked && editing){ toggleedit(); }
 	if(realappbarbtu.checked){ layoutmenu(); }      // the folder chips can only be measured while they show
@@ -800,6 +838,7 @@ async function inithomescreen() {
 loadsettings();
 loadrecent();
 editbtn.addEventListener("click",toggleedit);
+document.addEventListener("click",menuoutsideclick);
 realappbarbtu.addEventListener("change",drawerchanged);
 appbar.addEventListener("mouseenter",barhovered);
 const cache=readappcache();

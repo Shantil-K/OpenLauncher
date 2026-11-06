@@ -83,7 +83,7 @@ function previewbar(p,recent){
 // the miniature home screen
 // `idle`: the screen as it looks once idle dimming has set in (Settings > Screen)
 function previewscreen(p,idle){
-	const screen=el("div","pvscreen"+(idle?" pvidle"+(p.idleAction==="hidebar"?" pvhidebar":""):""));
+	const screen=el("div","pvscreen"+(idle?" pvidle"+(p.idleAction==="hidebar" || p.idleAction==="clockonly"?" pvhidebar":""):""));
 	const now=previewnow();
 	const cells={};
 	const put=(pos,node) => {

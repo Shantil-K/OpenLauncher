@@ -2,6 +2,8 @@
 // Folders in the app drawer. `settings.folders` is [{id, name}] and `settings.appfolder` maps an app id to a folder id
 // (an app is in at most one folder). The drawer shows the folders first, then the apps that are in none; opening a
 // folder shows just its apps. A bar above the drawer (#folderbar) has a chip for All apps and one per folder. In Edit mode an app's folder button opens the picker below.
+// In Edit mode a folder can be hidden (`settings.hiddenfolders`: it leaves the app menu but keeps its chip in the folder bar,
+// so it is still one press away) and moved among the other folders, like an app.
 
 const FOLDER_NAME_MAX=40;
 const FOLDER_MAX=30;
@@ -60,6 +62,7 @@ function deletefolder(id) {
 		if(settings.appfolder[appid]!==id){ kept[appid]=settings.appfolder[appid]; }
 	});
 	settings.appfolder=kept;
+	settings.hiddenfolders=(settings.hiddenfolders || []).filter((each) => each!==id);
 	if(openfolder===id){ openfolder=null; }
 	savesettings();
 	render();
@@ -85,6 +88,44 @@ function appsofview(id) {
 
 const FOLDER_PREVIEW_ICONS=4;
 
+function isfolderhidden(id) {
+	return (settings.hiddenfolders || []).indexOf(id)!==-1;
+}
+
+// hidden folders leave the app menu (Edit mode still shows them, dimmed) but keep their chip in the folder bar
+function togglefolderhidden(id) {
+	const hidden=(settings.hiddenfolders || []).filter((each) => each!==id);
+	if(!isfolderhidden(id)){ hidden.push(id); }
+	settings.hiddenfolders=hidden;
+	savesettings();
+	render();
+	const folder=folderbyid(id);
+	if(folder){ showmovetoast(isfolderhidden(id)?folder.name+" is hidden from the app menu. It stays in the folder bar.":folder.name+" is back in the app menu."); }
+}
+
+// Edit mode's buttons over a folder tile: Hide/Show, and the Move zone (rest the pointer on it to pick the folder up)
+function addfoldercontrols(tile) {
+	if(tile.appctl){ return; }
+	const appctl=document.createElement("div");
+	appctl.setAttribute("class","appctl folderctl");
+	tile.hidebtn=ctlbutton(() => togglefolderhidden(tile.folderid));
+	tile.hidebtn.classList.add("wide");
+	appctl.appendChild(tile.hidebtn);
+	const movezone=document.createElement("div");
+	movezone.setAttribute("class","movezone wide");
+	movezone.setAttribute("title","Hover to reorder");
+	movezone.setAttribute("aria-label","Hover to reorder");
+	const moveicon=document.createElement("span");
+	moveicon.innerHTML=iconsvg("reorder");
+	movezone.appendChild(moveicon);
+	let pickuptimer=null;
+	movezone.addEventListener("mouseenter",() => { pickuptimer=setTimeout(() => startfoldercarry(tile.folderid),PICKUP_MS); });
+	movezone.addEventListener("mouseleave",() => clearTimeout(pickuptimer));
+	appctl.appendChild(movezone);
+	tile.appendChild(appctl);
+	tile.appctl=appctl;
+}
+
 function makefoldertile(folder) {
 	const tile=document.createElement("div");
 	tile.setAttribute("class","appitem foldertile");
@@ -97,9 +138,22 @@ function makefoldertile(folder) {
 	tile.iconbox=icon;
 	tile.namelabel=name;
 	tile.previewkey=null;
-	tile.addEventListener("click",() => openfolderview(tile.folderid));
+	tile.addEventListener("click",() => { if(!carrying){ openfolderview(tile.folderid); } });
 	watchmarquee(tile);
 	tile.folderid=folder.id;
+	// moving a folder: hovering another folder puts it there, resting on itself drops it (as with apps, main.js)
+	tile.addEventListener("mouseenter",() => {
+		if(!carrying || !carrying.folder){ return; }
+		if(carrying.id===tile.folderid){
+			if(carrying.armed){ droptimer=setTimeout(stopcarry,DROP_MS); }
+		} else {
+			movecarriedfolder(tile.folderid);
+		}
+	});
+	tile.addEventListener("mouseleave",() => {
+		clearTimeout(droptimer);
+		if(carrying && carrying.folder && carrying.id===tile.folderid){ carrying.armed=true; }
+	});
 	return tile;
 }
 
@@ -142,6 +196,12 @@ function foldertilefor(folder) {
 	if(tile.namelabel.innerText!==folder.name){ tile.namelabel.innerText=folder.name; }
 	tile.setAttribute("title",folder.name+" ("+apps.length+")");
 	drawfolderpreview(tile,apps);
+	tile.classList.toggle("hiddenapp",isfolderhidden(folder.id));
+	tile.classList.toggle("carried",!!carrying && !!carrying.folder && carrying.id===folder.id);
+	if(editing){
+		addfoldercontrols(tile);
+		setctl(tile.hidebtn,isfolderhidden(folder.id)?"Show in the app menu":"Hide from the app menu",isfolderhidden(folder.id)?"eye":"eyeoff");
+	}
 	return tile;
 }
 
@@ -164,7 +224,7 @@ function drawertilelist() {
 	if(openfolder!==null && !folderbyid(openfolder)){ openfolder=null; }   // it was deleted (or restored from a backup without it)
 	const tiles=[];
 	if(openfolder===null){
-		settings.folders.forEach((each) => tiles.push(foldertilefor(each)));
+		settings.folders.forEach((each) => { if(editing || !isfolderhidden(each.id)){ tiles.push(foldertilefor(each)); } });
 	}
 	const apps=orderedapps().filter((app) => shown(app) && inthisview(app));
 	apps.forEach((app) => tiles.push(tilefor(app,false)));
@@ -435,6 +495,17 @@ function renderfolderlist(box) {
 		});
 		row.appendChild(name);
 		row.appendChild(el("span","listkind",appsinfolder(folder.id)+" apps"));
+		// hidden folders leave the app menu but keep their chip in the folder bar (the same as Edit mode's Hide)
+		const hidden=isfolderhidden(folder.id);
+		row.classList.toggle("hiddenfolder",hidden);
+		const toggle=optionbutton(hidden?"Show":"Hide",false,() => {
+			togglefolderhidden(folder.id);
+			foldersstatus=isfolderhidden(folder.id)?folder.name+" is hidden from the app menu; it stays in the folder bar.":folder.name+" is back in the app menu.";
+			renderpane();
+		},hidden?"eye":"eyeoff");
+		toggle.classList.add("compact","listtoggle");
+		toggle.setAttribute("title",hidden?"Show it in the app menu again":"Hide it from the app menu (it stays in the folder bar)");
+		row.appendChild(toggle);
 		const remove=el("button","sopt listremove");
 		remove.innerHTML=iconsvg("close");
 		remove.setAttribute("title","Delete this folder (its apps go back to the main list)");

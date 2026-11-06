@@ -29,13 +29,14 @@
 
 - **Wallpaper**: streamed aerial videos (Apple, Amazon, community) on the TV's hardware decoder, or **My wallpapers**: built-in photos, online photo albums (Landscapes, Mountains, Seas and lakes, Forests, Night skies, Cities: pick single photos or a whole album), your own pictures, videos and whole folders from a USB stick or the TV's storage, or links. One stays put; several take turns.
 - **App menu with folders**. HDMI inputs, TV settings, sharing and other system apps are sorted into folders of their own. The menu lines up with the bottom bar and stops above the Recent row when everything fits.
-- **Edit mode**: hide, reorder, move to folders, pin to the bottom bar or uninstall apps.
+- **Edit mode**: hide, reorder, move to folders, pin to the bottom bar or uninstall apps; hide and reorder folders too (a hidden folder keeps its place in the folder bar).
 - **Your own names and icons** (Settings > Apps > Names and icons), with icons from a USB stick or the TV's storage.
 - **Running apps**: see what the TV keeps open in the background and close one or all of them (green button).
 - **Input status**: HDMI inputs with nothing plugged in are dimmed, and a connected device's name (like PlayStation 5) shows on its input.
 - **Clock, date and weather** anywhere on screen, in digital, stacked or analog styles; 12 or 24 hours, or the same as the TV.
-- **Your look**: sharp or rounded corners, square to circular app icons, row spacing, sizes, names and the hover colour.
-- **Settings with live previews**, OLED protection (pixel shift, idle dimming), recent apps, and backup/restore.
+- **Your look**: sharp or rounded corners, square to circular app icons, row spacing, wallpaper brightness, sizes, names and the hover colour.
+- **Settings with live previews**, recent apps, and backup/restore.
+- **OLED care**: pixel shift, and when idle: dim, hide the bar or leave only the clock, dim or pause the wallpaper, or turn the screen off (rooted TVs).
 - **Full remote support**: arrows, OK, Back, coloured buttons and the Magic Remote pointer.
 - **Replace the stock Home screen**, **start the TV straight into OpenLauncher**, and **update from GitHub** with signed updates, right from the app (root).
 - **Fast start**: the home screen is drawn from the app list saved last time, then refreshed in the background.
@@ -59,8 +60,8 @@ Everything else is set up inside the app:
 - **Make it your Home screen**: Settings > TV > Replace stock Home > **Apply**.
 - **Open it when the TV turns on**: Settings > TV > When the TV turns on > **OpenLauncher** (works from the next full restart).
 - **Your own wallpapers and icons**: put pictures and videos on a USB stick or in `/media/developer/wallpapers` (copy them over SSH or with Dev Manager's file manager).
-- **Updates**: Settings > App info > **Check for updates**.
-- **Uninstalling**: Settings > App info > **Uninstall OpenLauncher** puts LG's Home and start-up back first. Uninstalling another way leaves Home pointed at an app that's gone, so press **Restore stock Home** before that.
+- **Updates**: Settings > App updates > **Check for updates**.
+- **Uninstalling**: Settings > App updates > **Uninstall OpenLauncher** puts LG's Home and start-up back first. Uninstalling another way leaves Home pointed at an app that's gone, so press **Restore stock Home** before that.
 
 Without root, nothing can replace LG's Home: use the TV's Quick Access (hold a number key while OpenLauncher is open), or run [`tools/home-watch`](tools/home-watch) on another device that stays on.
 

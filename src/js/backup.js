@@ -72,6 +72,7 @@ function parsebackup(text){
 			appfolder:appfolder,
 			names:cleannames(saved.names),
 			icons:cleanicons(saved.icons),
+			hiddenfolders:(cleanstrings(saved.hiddenfolders) || []).filter((id) => folderids.indexOf(id)!==-1),
 			sysplaced:cleanstrings(saved.sysplaced) || [],
 			sysdismissed:cleanstrings(saved.sysdismissed) || []
 		}
@@ -88,6 +89,7 @@ function applybackup(parsed){
 	settings.appfolder=parsed.layout.appfolder;
 	settings.names=parsed.layout.names;
 	settings.icons=parsed.layout.icons;
+	settings.hiddenfolders=parsed.layout.hiddenfolders;
 	settings.sysplaced=parsed.layout.sysplaced;
 	settings.sysdismissed=parsed.layout.sysdismissed;
 	savesettings();

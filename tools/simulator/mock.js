@@ -157,8 +157,8 @@
 	}, true);
 
 	// ---- the pointer. It is drawn in the page (not as the system cursor), so screen recorders and Chrome's own frame capture
-	// both show it: OpenLauncher's own pointer (pointer.svg, original artwork), which shrinks a little and turns the accent
-	// colour while pressed, and pops in and out when it appears and hides. The arrow keys hide it, as on the TV (webOS tells
+	// both show it: OpenLauncher's own pointer (pointer.svg, original artwork), which turns the accent colour while
+	// pressed, and pops in and out when it appears and hides. The arrow keys hide it, as on the TV (webOS tells
 	// the page with cursorStateChange).
 	const TIP = [6, 6];      // where the tip is in pointer.svg
 	let pointershown = false;

@@ -374,10 +374,10 @@ z-index:9999;
 #settingspanel {
 	display: none;
 	position: fixed;
-	top: 8vh;
-	left: 9vw;
-	width: 82vw;
-	height: 84vh;
+	top: 4vh;
+	left: 5vw;
+	width: 90vw;
+	height: 92vh;
 	z-index: 20001;
 	flex-direction: column;
 	overflow: hidden;
@@ -407,12 +407,12 @@ z-index:9999;
 #settingstabs {
 	display: flex;
 	flex-direction: column;
-	gap: 1vh;
+	gap: 0.7vh;
 	width: 14vw;
 	padding: 2vh 1vw;
 	border-right: 1px solid rgba(255,255,255,0.2);
 }
-.stab { display: flex; align-items: center; gap: 0.8vw; font-size: 2.4vh; padding: 1.4vh 1vw; text-align: left; border-radius: calc(0.8vh * var(--round, 1)); }
+.stab { display: flex; align-items: center; gap: 0.8vw; font-size: 2.3vh; padding: 0.95vh 1vw; text-align: left; border-radius: calc(0.8vh * var(--round, 1)); }
 .stab.on, .sopt.on { color: rgb(0,0,0); background-color: rgb(var(--accent)); border-color: rgb(var(--accent)); }
 #settingspane { flex: 1; overflow-y: auto; padding: 1vh 2vw; scrollbar-width: none; }
 .srow {
@@ -420,7 +420,7 @@ z-index:9999;
 	align-items: center;
 	justify-content: space-between;
 	gap: 2vw;
-	padding: 1.6vh 0;
+	padding: 1.15vh 0;
 	border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 .slabel { flex: 0 0 12vw; display: flex; align-items: center; gap: 0.6vw; }
@@ -430,6 +430,11 @@ z-index:9999;
 .srow:hover .shintmark, .srow:focus-within .shintmark { opacity: 1; color: rgb(var(--accent)); }
 .scontrol { flex: 1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.8vh 0.6vw; }
 .sopt { font-size: 2vh; padding: 1vh 1.2vw; border-radius: calc(0.8vh * var(--round, 1)); }
+/* a short note beside a row's buttons (Settings > TV > When the TV turns on, before the Home button is on) */
+.sinlinenote { align-self: center; margin-left: 0.8vw; font-size: 1.8vh; opacity: 0.75; }
+/* a choice that can't be used right now (it says why beside or under it) */
+.sopt:disabled, .sopt:disabled:hover { opacity: 0.38; cursor: default; background-color: rgba(255,255,255,0.06); }
+.sopt.on:disabled { color: rgb(255,255,255); background-color: rgba(var(--accent), 0.35); border-color: rgba(var(--accent), 0.5); }
 .swatch { width: 4.4vh; height: 4.4vh; padding: 0; border-radius: 50%; border: 3px solid rgba(255,255,255,0.35); }
 .swatch.on { border-color: rgb(255,255,255); box-shadow: 0 0 0 3px rgb(0,0,0), 0 0 0 5px rgb(255,255,255); }
 .pospicker { display: flex; align-items: center; gap: 1.2vw; }
@@ -538,10 +543,13 @@ z-index:9999;
 .abouticon { flex: 0 0 auto; width: 10vh; height: 10vh; border-radius: calc(2vh * var(--round, 1)); }
 .abouttitle { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .aboutname { font-size: 3.4vh; }
+.aboutbadge { margin-left: 1vw; vertical-align: middle; font-size: 1.6vh; padding: 0.3vh 0.7vw; border-radius: calc(0.6vh * var(--round, 1)); color: rgba(255,255,255,0.75); border: 1px solid rgba(255,255,255,0.3); }
+.aboutbadge.signed { color: rgb(110,220,120); border-color: rgba(110,220,120,0.55); background-color: rgba(110,220,120,0.1); }
 .aboutsub { margin-top: 0.4vh; font-size: 1.8vh; opacity: 0.7; }
 .aboutupdate { display: flex; align-items: center; gap: 1.2vw; margin-bottom: 1.6vh; padding: 1.2vh 1vw; border-radius: calc(1vh * var(--round, 1)); background-color: rgba(255,255,255,0.06); }
 .aboutupdatetext { flex: 1; min-width: 0; font-size: 1.9vh; }
-.aboutrows { max-width: 60vw; }
+/* the facts, one per row across the full width, their values lined up with the update button's right edge */
+.aboutrows { width: 100%; }
 .aboutrow { display: flex; align-items: baseline; justify-content: space-between; gap: 1vw; padding: 0.55vh 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 1.8vh; }
 .aboutlabel { flex: 0 0 auto; opacity: 0.7; }
 .aboutvalue { min-width: 0; text-align: right; overflow-wrap: anywhere; }
@@ -690,6 +698,12 @@ z-index:9999;
 .layer > *, #appbar, #recentrow, #infobtn { transition: filter 3s ease; }
 #maindiv.idle .layer > *, #maindiv.idle #appbar, #maindiv.idle #recentrow, #maindiv.idle #infobtn { filter: brightness(var(--idledim, 0.3)); }
 #maindiv.idle-hidebar #appbar, #maindiv.idle-hidebar #recentrow, #maindiv.idle-hidebar #infobtn { opacity: 0; pointer-events: none; }
+/* Clock only: everything but the clock (and its date) goes */
+#maindiv.idle-clockonly #appbar, #maindiv.idle-clockonly #recentrow, #maindiv.idle-clockonly #infobtn,
+#maindiv.idle-clockonly #weatherlayer, #maindiv.idle-clockonly #weather { opacity: 0; pointer-events: none; }
+/* the wallpaper's own darkening: Brightness, plus the idle dim when "Dim it too" is on */
+#bgshade { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; background-color: #000; opacity: var(--wallshade, 0); transition: opacity 1.5s ease; }
+#maindiv.idle-dimwall ~ #bgshade, body.idle-dimwall #bgshade { opacity: calc(1 - (1 - var(--wallshade, 0)) * var(--idledim, 0.3)); }
 
 /* weather widget (weather.js): under the clock and date, or on its own layer */
 #weather { display: flex; flex-direction: column; align-items: inherit; margin-top: 1vh; text-shadow: 0 2px 8px rgba(0,0,0,0.75); }
@@ -725,7 +739,8 @@ z-index:9999;
 .chipicon svg { display: block; width: 100%; height: 100%; fill: currentColor; }
 .chipcount { font-size: 1.7vh; opacity: 0.7; }
 .chipcount:empty { display: none; }
-#maindiv.editing .foldertile .appctl { display: none !important; }
+/* a folder tile's Edit-mode buttons: Hide/Show on top, Move below, each a full row */
+.movezone.wide { grid-column: 1 / -1; }
 
 /* "Move to folder" picker */
 #folderbackdrop { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 20000; background-color: rgba(0,0,0,0.55); }
@@ -884,12 +899,15 @@ z-index:9999;
 .filepicture > img { display: block; width: 100%; height: 100%; object-fit: cover; }
 #filesmessage { margin-top: 1vh; min-height: 2vh; }
 .sstatus.guide { margin-bottom: 1.2vh; line-height: 1.45; }
-/* Settings > Apps > Names and icons: one button per app, which opens its edit window (rename.js) */
-.appeditlist { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8vh 0.6vw; }
-.appeditbtn { display: flex; align-items: center; gap: 0.7vw; min-width: 0; padding: 0.7vh 0.7vw; text-align: left; font-size: 1.8vh; }
-.appediticon { flex: 0 0 auto; width: 4.4vh; height: 4.4vh; object-fit: cover; border-radius: calc(0.7vh * var(--round, 1)); }
-.appeditname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.appeditmark { flex: 0 0 auto; width: 2.2vh; height: 2.2vh; opacity: 0.7; }
+/* Settings > Names & icons: a grid of small icons; the name shows on the hovered or focused one (rename.js) */
+.appeditlist { display: grid; grid-template-columns: repeat(auto-fill, 8.4vh); gap: 0.9vh; }
+.scontrol > .appeditlist, .scontrol > .sstatus { flex: 1 1 100%; }
+.appeditbtn { position: relative; width: 8.4vh; height: 8.4vh; padding: 0.8vh; overflow: visible; }
+.appediticon { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: calc(0.6vh * var(--round, 1)); }
+.appeditname { display: none; position: absolute; left: 50%; bottom: calc(100% + 0.6vh); transform: translateX(-50%); z-index: 5; white-space: nowrap; max-width: 30vw; overflow: hidden; text-overflow: ellipsis;
+	padding: 0.4vh 0.7vw; font-size: 1.7vh; color: #fff; background: rgba(10,10,14,0.95); border: 1px solid rgba(var(--accent), 0.8); border-radius: calc(0.5vh * var(--round, 1)); pointer-events: none; }
+.appeditbtn:hover .appeditname, .appeditbtn.dfocus .appeditname { display: block; }
+.appeditmark { position: absolute; right: -0.5vh; top: -0.5vh; width: 2.2vh; height: 2.2vh; padding: 0.3vh; border-radius: 50%; color: #000; background: rgb(var(--accent)); }
 .appeditmark svg { display: block; width: 100%; height: 100%; fill: currentColor; }
 .appeditbtn.hiddenapp .appediticon { opacity: 0.45; }
 /* an HDMI input with nothing plugged in (inputs.js) */
@@ -909,3 +927,6 @@ z-index:9999;
 ::-webkit-scrollbar { display: none; width: 0; height: 0; }
 /* all the apps fit in the app menu (layoutmenu in main.js): nothing to scroll */
 #maindiv.menufits #appluncher { overflow-y: hidden; }
+/* Settings > Folders: a hidden folder's row is dimmed, its Show button stays clear */
+.listrow.hiddenfolder .listinput, .listrow.hiddenfolder .listkind { opacity: 0.5; }
+.listtoggle { flex: 0 0 auto; }

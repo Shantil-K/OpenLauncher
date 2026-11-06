@@ -5,10 +5,10 @@
 // method actually patches; this button automates those same steps and nothing else.
 
 const REPLACE_METHODS={
-	sixto24:{file:"keyfilters-6-24.sh",label:"webOS 6–24",persist:true},
-	twentyfive:{file:"keyfilters-25.sh",label:"webOS 25",persist:true},
-	defaultapp:{file:"appdefault-25-26.sh",label:"webOS 25–26 (Default App)",persist:false},
-	copilot:{file:"copilot-25-26.sh",label:"webOS 25–26 (copilot hijack)",persist:true}
+	sixto24:{file:"keyfilters-6-24.sh",label:"webOS 6–24",short:"6–24",persist:true},
+	twentyfive:{file:"keyfilters-25.sh",label:"webOS 25",short:"25",persist:true},
+	defaultapp:{file:"appdefault-25-26.sh",label:"webOS 25–26 (Default App)",short:"25–26",persist:false},
+	copilot:{file:"copilot-25-26.sh",label:"webOS 25–26 (copilot hijack)",short:"25–26 (copilot)",persist:true}
 };
 
 // Auto-picks a webOS version above by reading the actual system file the scripts target, instead of guessing from
@@ -57,10 +57,43 @@ const RESTORE_STEPS="rm -f /var/lib/webosbrew/init.d/replace.sh; "+
 	"rm -f /var/lib/webosbrew/openlauncher/hackfilters.js /var/lib/webosbrew/openlauncher/libapp.so";
 const RESTORE_COMMAND=RESTORE_STEPS+"; restart sam";
 
-let replacestate={busy:false,action:null,ok:null};   // action: "apply" | "restore"; ok: null before it has run, then true or false
-
+// single-quote a string for the root shell
 function shquote(value){
 	return "'"+String(value).replace(/'/g,"'\\''")+"'";
+}
+
+let replacestate={busy:false,action:null,ok:null};   // action: "apply" | "restore"; ok: null before it has run, then true or false
+let homeconfirm=null;     // "apply" | "restore" while its one-line "are you sure" shows
+
+// Is Home replaced now? Remembered when Apply works (and forgotten by Restore), and also read from the TV: the start-up
+// copy and the mounted files the key filter and copilot methods leave, and the default Home app the 25-26 method sets.
+const HOME_FLAG_KEY="openlauncher.homereplaced";
+let homestate={applied:null};      // null until checked
+const HOME_CHECK_COMMAND="[ -f /var/lib/webosbrew/init.d/replace.sh ] && echo initd; "+
+	"grep -qE 'KeyFilters/systemUi.js|com.webos.app.home/lib/libapp.so' /proc/mounts && echo mounted; "+
+	"luna-send -n 1 -w 3000 luna://com.webos.service.applicationmanager/getDefaultApp '{\"category\":\"home\"}' 2>/dev/null </dev/null; true";
+
+function homeflag(){
+	try { return !!localStorage.getItem(HOME_FLAG_KEY); } catch(e) { return false; }
+}
+
+function sethomeflag(on){
+	try { if(on){ localStorage.setItem(HOME_FLAG_KEY,prefs.homeReplaceMethod); } else { localStorage.removeItem(HOME_FLAG_KEY); } } catch(e) {}
+}
+
+function homeredraw(){
+	if(typeof settingsisopen==="function" && settingsisopen() && settingstab==="tv"){ renderpane(); }
+}
+
+async function checkhomestate(){
+	if(!rooted){ return; }
+	let out="";
+	try {
+		const result=await execasroot(HOME_CHECK_COMMAND);
+		out=String((result && result.stdoutString) || "");
+	} catch(e) {}
+	homestate.applied=/initd|mounted/.test(out) || out.indexOf('"'+appid+'"')!==-1 || homeflag();
+	homeredraw();
 }
 
 async function applyhomereplace() {
@@ -68,7 +101,7 @@ async function applyhomereplace() {
 	const method=REPLACE_METHODS[prefs.homeReplaceMethod];
 	if(!method){ return; }
 	replacestate={busy:true,action:"apply",ok:null};
-	if(settingstab==="tv"){ renderpane(); }
+	homeredraw();
 	try {
 		const script=appdir+"/access/replace/"+method.file;
 		await execasroot("sh "+shquote(script));
@@ -77,31 +110,72 @@ async function applyhomereplace() {
 			await execasroot("cp "+shquote(script)+" /var/lib/webosbrew/init.d/replace.sh && chmod +x /var/lib/webosbrew/init.d/replace.sh");
 		}
 		replacestate={busy:false,action:"apply",ok:true};
+		sethomeflag(true);
+		homestate.applied=true;
 		await toasty("Done. Press Home on the remote to check it.");
 	} catch(e) {
 		replacestate={busy:false,action:"apply",ok:false};
 	}
-	if(settingstab==="tv"){ renderpane(); }
+	homeredraw();
 }
 
-// Settings > TV > "Restore stock Home". Important: uninstalling OpenLauncher does NOT undo any of this on its own
-// (the init.d script and the Luna DB's default app live outside the app's own storage, so they survive an
-// uninstall) - press this first, or Home is left pointed at an app that's no longer there.
+// Settings > TV > Restore. Uninstalling OpenLauncher does NOT undo any of this on its own (the init.d script and the
+// default app live outside the app's own storage), so do this first, or Home is left pointed at an app that's gone.
 async function restorehome() {
 	if(replacestate.busy){ return; }
 	replacestate={busy:true,action:"restore",ok:null};
-	if(settingstab==="tv"){ renderpane(); }
+	homeredraw();
 	try {
 		await execasroot(RESTORE_COMMAND);
 		replacestate={busy:false,action:"restore",ok:true};
+		sethomeflag(false);
+		homestate.applied=false;
 		await toasty("Stock Home restored.");
 	} catch(e) {
 		replacestate={busy:false,action:"restore",ok:false};
 	}
-	if(settingstab==="tv"){ renderpane(); }
+	homeredraw();
 }
 
-// Settings > App info > "Uninstall OpenLauncher". Rooted: restore-fix and self-removal are sent as ONE shell
+// the row: the webOS version, then Apply (or Restore once it is applied), each asking once before it restarts the system UI
+function renderhomecontrol(box,item){
+	const method={key:item.key,label:item.label,options:Object.keys(REPLACE_METHODS).map((id) => [id,REPLACE_METHODS[id].short])};
+	stepper(method,box);
+	if(replacestate.busy){
+		const busy=optionbutton(replacestate.action==="restore"?"Restoring...":"Applying...",false,() => {});
+		busy.disabled=true;
+		box.appendChild(busy);
+		return;
+	}
+	const action=homestate.applied?"restore":"apply";
+	if(homeconfirm===action){
+		box.appendChild(el("span","sconfirm","Restarts the TV's menus."));
+		const yes=optionbutton(action==="restore"?"Yes, restore":"Yes, apply",false,() => {
+			homeconfirm=null;
+			if(action==="restore"){ restorehome(); } else { applyhomereplace(); }
+		});
+		yes.classList.add("action","danger");
+		box.appendChild(yes);
+		box.appendChild(optionbutton("Cancel",false,() => { homeconfirm=null; renderpane(); }));
+		return;
+	}
+	const button=optionbutton(action==="restore"?"Restore":"Apply",false,() => { homeconfirm=action; renderpane(); },action==="restore"?"reset":"open");
+	button.classList.add("action");
+	if(homestate.applied===null){ button.disabled=true; }
+	box.appendChild(button);
+}
+
+function renderhomereplace(box){
+	let text;
+	if(replacestate.busy){ text="This restarts the TV's menus, so the screen may flicker or go dark for a moment."; }
+	else if(replacestate.ok===false){ text=replacestate.action==="restore"?"Couldn't restore LG's Home. Try again, or see access/replace/Readme.md to undo it over SSH.":"That didn't work. Try another webOS version, or check the firmware in App updates."; }
+	else if(homestate.applied===null){ text="Checking..."; }
+	else if(homestate.applied){ text="Home opens OpenLauncher. Restore puts LG's Home back."; }
+	else { text="Home opens LG's Home. Apply makes it open OpenLauncher."; }
+	box.appendChild(el("div","sstatus",text));
+}
+
+// Settings > App updates > "Uninstall OpenLauncher". Rooted: restore-fix and self-removal are sent as ONE shell
 // command to the root service (org.webosbrew.hbchannel.service/exec), which runs on the TV independently of this
 // app's own process - so it keeps going even if "restart sam" (at the end) or the uninstall itself tears this
 // page down partway through. It also sidesteps canuninstall()'s normal "the launcher can't uninstall itself"
@@ -122,6 +196,7 @@ async function selfuninstall() {
 			"restart sam";
 		try {
 			await toasty("Restoring stock Home and uninstalling OpenLauncher...");
+			sethomeflag(false);
 			await execasroot(command);
 			uninstallstate={busy:false,ok:true};
 		} catch(e) {
@@ -150,16 +225,5 @@ function renderuninstall(box){
 		:"Uninstalls OpenLauncher. Needs trusted trustLevel or root; without root the Replace Home fix is skipped since it was never usable without root either.";
 	if(uninstallstate.busy){ text="Working... the app may close on its own once this finishes."; }
 	else if(uninstallstate.ok===false){ text="Couldn't uninstall it from here. Remove it from the TV's own app/content manager, or Homebrew Channel's App Manager, instead."; }
-	box.appendChild(el("div","sstatus",text));
-}
-
-function renderhomereplace(box){
-	const method=REPLACE_METHODS[prefs.homeReplaceMethod];
-	let text=method?("Apply runs "+method.file+" through the root service"+(method.persist?", then copies it into webosbrew's init.d so it survives a reboot.":" (this method is already persistent, no init.d copy needed).")+
-		" Restore stock Home undoes it (and any other method you tried before) - do this before uninstalling OpenLauncher, since uninstalling on its own leaves Home pointed at an app that's gone.")
-		:"Pick a webOS range above first.";
-	if(replacestate.busy){ text=(replacestate.action==="restore"?"Restoring...":"Applying...")+" this restarts the system UI, so the screen may flicker or go black for a moment."; }
-	else if(replacestate.ok===true){ text=replacestate.action==="restore"?"Stock Home restored. Press Home to check.":"Done. Press Home on the remote to check it."; }
-	else if(replacestate.ok===false){ text="Something went wrong. Make sure the device is rooted, or do it manually over SSH instead (see the Readme's Replace section)."; }
 	box.appendChild(el("div","sstatus",text));
 }

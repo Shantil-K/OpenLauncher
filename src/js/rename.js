@@ -148,7 +148,8 @@ function initrename() {
 
 document.addEventListener("DOMContentLoaded",initrename);
 
-// Settings > Apps > Names and icons: every app in the app menu (hidden ones too, dimmed), each opening its edit window
+// Settings > Names & icons: every app in the app menu (hidden ones too, dimmed) as a small icon; pressing one opens its edit
+// window. The name shows over the icon while it is hovered or focused, and apps you changed carry a small pencil.
 function renderappeditlist(box) {
 	if(!applist){
 		box.appendChild(el("div","sstatus","The app list is still loading."));
@@ -171,10 +172,10 @@ function renderappeditlist(box) {
 		if(changed){
 			const mark=el("span","appeditmark");
 			mark.innerHTML=iconsvg("pencil");
-			mark.setAttribute("title","Changed");
 			btn.appendChild(mark);
 		}
-		btn.setAttribute("title",app.title);
+		btn.setAttribute("title",appdisplayname(app)+(changed?" (changed)":""));
+		btn.setAttribute("aria-label",appdisplayname(app));
 		btn.addEventListener("click",() => openrename(app.id));
 		grid.appendChild(btn);
 	});

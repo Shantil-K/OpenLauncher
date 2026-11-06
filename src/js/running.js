@@ -79,7 +79,8 @@ function showrunning(ids){
 		all.classList.add("danger");
 		appmenulist.appendChild(all);
 	}
-	setfocus(within(appmenulist,"button")[0] || appmenuclose);
+	// nothing is highlighted until the remote is used: the first arrow press puts the focus on the first app (dpad.js)
+	setfocus(null);
 }
 
 function runningbutton(label,id,onclick){

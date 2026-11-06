@@ -247,8 +247,36 @@ function askuninstall(tile,id,app,direct) {
 	setfocus(cancel);
 }
 
-// ---- carrying an app: arrows move it
+// ---- the menu OK opens on a folder in Edit mode: open it, hide or show it, or move it among the folders
+function openfoldermenu(tile) {
+	const id=tile.folderid;
+	const folder=folderbyid(id);
+	if(!folder){ return; }
+	returnto=tile;
+	maindiv.classList.remove("runningopen");
+	appmenutitle.textContent=folder.name;
+	appmenusub.textContent=isfolderhidden(id)?"Hidden from the app menu; still in the folder bar":"Folder";
+	appmenulist.innerHTML="";
+	const add=(label,action) => {
+		const button=el("button","sopt",label);
+		button.addEventListener("click",() => { closeappmenu(); action(); });
+		appmenulist.appendChild(button);
+	};
+	add("Open",() => openfolderview(id));
+	add(isfolderhidden(id)?"Show in the app menu":"Hide from the app menu",() => togglefolderhidden(id));
+	add("Reorder",() => {
+		startfoldercarry(id);
+		carryhint.textContent="Arrow keys move it among the folders. OK drops it.";
+		const moved=carriedtile();
+		if(moved){ setfocus(moved); }
+	});
+	maindiv.classList.add("menuopen");
+	setfocus(within(appmenulist,"button")[0] || null);
+}
+
+// ---- carrying an app (or a folder): arrows move it
 function carriedtile() {
+	if(carrying.folder){ return within(appluncher,".foldertile").filter((tile) => tile.folderid===carrying.id)[0] || null; }
 	const box=carrying.inbar?appbar:appluncher;
 	return within(box,".appitem").filter((tile) => tile.getAttribute("data-appid")===carrying.id)[0] || null;
 }
@@ -256,6 +284,14 @@ function carriedtile() {
 function movecarriedbykey(key) {
 	const tile=carriedtile();
 	if(!tile){ return; }
+	if(carrying.folder){
+		const folders=within(appluncher,".foldertile").filter((each) => each!==tile);
+		const at=pickneighbor(tile.getBoundingClientRect(),folders.map((each) => each.getBoundingClientRect()),key);
+		if(at!==-1){ movecarriedfolder(folders[at].folderid); }
+		const moved=carriedtile();
+		if(moved){ setfocus(moved); }
+		return;
+	}
 	const box=carrying.inbar?appbar:appluncher;
 	const others=within(box,".appitem").filter((each) => each!==tile && each.getAttribute("data-appid"));
 	const index=pickneighbor(tile.getBoundingClientRect(),others.map((each) => each.getBoundingClientRect()),key);
@@ -305,6 +341,8 @@ function activate(el) {
 		el.focus();
 	} else if(editing && el.classList.contains("appitem") && !el.classList.contains("recenttile") && el.getAttribute("data-appid")){
 		openappmenu(el);
+	} else if(editing && el.classList.contains("foldertile")){
+		openfoldermenu(el);
 	} else {
 		el.click();
 	}
@@ -432,6 +470,7 @@ function oncursorstate(event) {
 function initdpad() {
 	appmenuclose.innerHTML=iconsvg("close");
 	appmenuclose.addEventListener("click",closeappmenu);
+	appmenubackdrop.addEventListener("click",closeappmenu);      // a click outside the window closes it
 	// opening the drawer moves focus to its first app; closing it goes back to what opened it (the Apps button)
 	realappbarbtu.addEventListener("change",() => {
 		if(!keyboardmode){ return; }
